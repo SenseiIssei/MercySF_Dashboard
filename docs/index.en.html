@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mercy SF Web Dashboard</title>
+<meta name="description" content="Web dashboard for Mercy SF (Shakes & Fidget bot) — overview, control, and analytics for all accounts right in the browser." />
+<style>
+  :root {
+    --bg: #0e0f13;
+    --panel: #16181f;
+    --panel-2: #1c1f28;
+    --border: #262a35;
+    --text: #e7e9ee;
+    --muted: #8a8f9c;
+    --accent: #4f8cff;
+    --accent-2: #7a5cff;
+    --green: #35c98f;
+    --red: #ef5563;
+    --yellow: #f0b429;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.55;
+  }
+  a { color: var(--accent); }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 20px; }
+
+  header.hero {
+    padding: 72px 0 56px;
+    text-align: center;
+    background:
+      radial-gradient(circle at 20% 0%, rgba(79,140,255,0.16), transparent 55%),
+      radial-gradient(circle at 80% 10%, rgba(122,92,255,0.14), transparent 50%);
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-icon { font-size: 44px; margin-bottom: 10px; }
+  .hero h1 { font-size: clamp(28px, 5vw, 42px); margin: 0 0 12px; }
+  .hero p.tagline { color: var(--muted); font-size: clamp(14px, 2.2vw, 17px); max-width: 620px; margin: 0 auto 28px; }
+  .badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 28px; }
+  .badge {
+    font-size: 11.5px; font-weight: 600; padding: 5px 12px; border-radius: 999px;
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--muted);
+  }
+  .cta-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
+    font-weight: 600; font-size: 14px; padding: 11px 22px; border-radius: 10px;
+    border: 1px solid var(--border); transition: transform .1s, filter .15s;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border: none; box-shadow: 0 6px 18px rgba(79,140,255,0.3); }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-secondary { background: var(--panel-2); color: var(--text); }
+  .btn-secondary:hover { background: #23262f; }
+  .btn-kofi { background: #ff5f5f; color: #fff; border: none; }
+  .btn-kofi:hover { filter: brightness(1.08); }
+
+  .warning-banner {
+    background: rgba(240,180,41,0.08); border: 1px solid rgba(240,180,41,0.35);
+    color: var(--text); border-radius: 12px; padding: 16px 18px; font-size: 13.5px;
+    margin: 32px 0;
+  }
+  .warning-banner strong { color: var(--yellow); }
+
+  section { padding: 56px 0; border-bottom: 1px solid var(--border); }
+  section:last-of-type { border-bottom: none; }
+  h2 { font-size: 24px; margin: 0 0 8px; }
+  h2 .num { color: var(--accent); font-variant-numeric: tabular-nums; margin-right: 8px; }
+  .section-sub { color: var(--muted); font-size: 14px; margin: 0 0 30px; max-width: 640px; }
+
+  pre {
+    background: #0b0c10; border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 18px; overflow-x: auto; font-size: 13px; line-height: 1.6;
+  }
+  code { font-family: "Consolas", "SF Mono", Menlo, monospace; }
+  p code, li code { background: var(--panel-2); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; font-size: 0.9em; }
+
+  .install-steps { counter-reset: step; list-style: none; margin: 0; padding: 0; }
+  .install-steps li {
+    counter-increment: step; position: relative; padding-left: 40px; margin-bottom: 22px;
+  }
+  .install-steps li::before {
+    content: counter(step); position: absolute; left: 0; top: 0;
+    width: 26px; height: 26px; border-radius: 50%; background: var(--panel-2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; font-size: 12.5px; font-weight: 700; color: var(--accent);
+  }
+  .install-steps h4 { margin: 2px 0 6px; font-size: 15px; }
+  .install-steps p { margin: 0 0 8px; color: var(--muted); font-size: 13.5px; }
+
+  .shot-group { margin-bottom: 36px; }
+  .shot-group:last-child { margin-bottom: 0; }
+  .shot-group h4 { margin: 0 0 14px; font-size: 12.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; text-align: center; }
+  .shot-grid-desktop { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+  .shot-grid-mobile { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; max-width: 560px; margin: 0 auto; justify-items: center; }
+  .shot-frame {
+    display: block; width: 100%; border-radius: 10px; overflow: hidden; border: 1px solid var(--border);
+    background: var(--panel); line-height: 0; transition: border-color .15s, transform .1s;
+    padding: 0; cursor: zoom-in; font: inherit; color: inherit;
+  }
+  .shot-frame:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .shot-frame img { width: 100%; height: auto; display: block; }
+  .shot-caption { margin-top: 8px; font-size: 12px; color: var(--muted); text-align: center; }
+
+  .lightbox {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(6,7,10,0.88); backdrop-filter: blur(2px);
+    align-items: center; justify-content: center; padding: 40px 20px;
+    cursor: zoom-out;
+  }
+  .lightbox.open { display: flex; }
+  .lightbox img {
+    max-width: 100%; max-height: 100%; border-radius: 10px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5); cursor: default;
+  }
+  .lightbox-close {
+    position: fixed; top: 18px; right: 22px; width: 40px; height: 40px; border-radius: 50%;
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--text);
+    font-size: 20px; line-height: 1; cursor: pointer;
+  }
+  .lightbox-close:hover { background: #23262f; }
+
+  .feature-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .feature-card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 20px;
+  }
+  .feature-card .icon { font-size: 22px; margin-bottom: 10px; display: block; }
+  .feature-card h3 { margin: 0 0 8px; font-size: 15px; }
+  .feature-card p { margin: 0; color: var(--muted); font-size: 13.5px; }
+
+  .limits-list { list-style: none; margin: 0; padding: 0; }
+  .limits-list li {
+    display: flex; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border); font-size: 13.5px; color: var(--text);
+  }
+  .limits-list li:last-child { border-bottom: none; }
+  .limits-list li .dot { flex-shrink: 0; margin-top: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--yellow); }
+  .limits-list li span.text { color: var(--muted); }
+
+  .bench-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .bench-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+  .bench-card h4 { margin: 0 0 14px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  table.bench-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.bench-table td { padding: 7px 0; border-bottom: 1px solid var(--border); }
+  table.bench-table td:first-child { color: var(--muted); }
+  table.bench-table td:last-child { text-align: right; font-weight: 600; }
+  table.bench-table tr:last-child td { border-bottom: none; }
+
+  .stack-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .stack-pill {
+    background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 14px; font-size: 13px; font-weight: 600;
+  }
+
+  .thanks-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .thanks-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }
+  .thanks-card h3 { margin: 0 0 8px; font-size: 15px; }
+  .thanks-card p { margin: 0 0 12px; color: var(--muted); font-size: 13.5px; }
+
+  footer { padding: 40px 0 60px; text-align: center; color: var(--muted); font-size: 12.5px; }
+  footer a { color: var(--muted); text-decoration: underline; }
+  footer a:hover { color: var(--text); }
+  footer .foot-links { margin-top: 10px; display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
+
+  @media (max-width: 600px) {
+    header.hero { padding: 56px 0 40px; }
+    section { padding: 40px 0; }
+  }
+
+  .lang-switch { text-align: center; padding: 10px 0; font-size: 12.5px; color: var(--muted); border-bottom: 1px solid var(--border); }
+  .lang-switch a { color: var(--muted); text-decoration: none; }
+  .lang-switch a.active { color: var(--text); font-weight: 600; }
+  .lang-switch a:hover { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="lang-switch"><a href="index.html">🇩🇪 Deutsch</a> · <a class="active" href="index.en.html">🇬🇧 English</a></div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="hero-icon">⚔</div>
+    <h1>Mercy SF Web Dashboard</h1>
+    <p class="tagline">A browser dashboard built around the <a href="https://mercysf.app" target="_blank" rel="noopener">Mercy SF</a> Shakes&nbsp;&amp;&nbsp;Fidget CLI — overview, control, live data, and analytics for all accounts, without the terminal menu. Runs on your own server, fully mobile-friendly.</p>
+    <div class="badges">
+      <span class="badge">Node.js + Express</span>
+      <span class="badge">No build step</span>
+      <span class="badge">AES-256 encrypted credentials</span>
+      <span class="badge">AGPLv3</span>
+    </div>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="https://github.com/dandulox/MercySF_Dashboard" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+        Go to repository
+      </a>
+      <a class="btn btn-secondary" href="#installation">View installation</a>
+      <a class="btn btn-kofi" href="https://ko-fi.com/senseiissei" target="_blank" rel="noopener">☕ Support Mercy SF</a>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="warning-banner">
+    ⚠️ <strong>Experimental, use at your own risk.</strong> This dashboard is under active development and may contain bugs. Automated play (botting) generally violates Shakes&nbsp;&amp;&nbsp;Fidget's terms of service — there is an inherent risk of account suspension, regardless of whether the automation runs through this dashboard or directly via the CLI.
+  </div>
+</div>
+
+<section id="what-is-this">
+  <div class="wrap">
+    <h2><span class="num">01</span>What is this?</h2>
+    <p class="section-sub">Everything runs on top of the official Mercy&nbsp;SF CLI — nothing about the bot itself is changed, this just builds a complete web interface around it. It also pulls live data (equipment, guild, tavern, mail) directly from the game server via <a href="https://github.com/the-marenga/sf-api" target="_blank" rel="noopener">sf-api</a> by the-marenga.</p>
+  </div>
+</section>
+
+<section id="screenshots">
+  <div class="wrap">
+    <h2><span class="num">02</span>Screenshots</h2>
+    <p class="section-sub">Live from a running dashboard with 30 accounts — anonymous mode is on, so character names are pixelated.</p>
+
+    <div class="shot-group">
+      <h4>Desktop</h4>
+      <div class="shot-grid-desktop">
+        <div>
+          <button type="button" class="shot-frame" data-full="screenshots/desktop-overview.png">
+            <img src="screenshots/desktop-overview.png" alt="Overview page: accounts table, character stats, equipment, tavern, guild" loading="lazy" />
+          </button>
+          <div class="shot-caption">Overview</div>
+        </div>
+        <div>
+          <button type="button" class="shot-frame" data-full="screenshots/desktop-accounts.png">
+            <img src="screenshots/desktop-accounts.png" alt="Account management: running characters with session stats, recent actions, and scouted players" loading="lazy" />
+          </button>
+          <div class="shot-caption">Account Management</div>
+        </div>
+        <div>
+          <button type="button" class="shot-frame" data-full="screenshots/desktop-analytics.png">
+            <img src="screenshots/desktop-analytics.png" alt="Analytics page with time-series charts and daily earnings" loading="lazy" />
+          </button>
+          <div class="shot-caption">Analytics</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="shot-group">
+      <h4>Mobile</h4>
+      <div class="shot-grid-mobile">
+        <div>
+          <button type="button" class="shot-frame" data-full="screenshots/mobile-overview.png">
+            <img src="screenshots/mobile-overview.png" alt="Overview page in mobile view" loading="lazy" />
+          </button>
+          <div class="shot-caption">Overview</div>
+        </div>
+        <div>
+          <button type="button" class="shot-frame" data-full="screenshots/mobile-accounts.png">
+            <img src="screenshots/mobile-accounts.png" alt="Account management in mobile view" loading="lazy" />
+          </button>
+          <div class="shot-caption">Account Management</div>
+        </div>
+        <div>
+          <button type="button" class="shot-frame" data-full="screenshots/mobile-analytics.png">
+            <img src="screenshots/mobile-analytics.png" alt="Analytics page in mobile view" loading="lazy" />
+          </button>
+          <div class="shot-caption">Analytics</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <h2><span class="num">03</span>Features</h2>
+    <p class="section-sub">An overview of everything the dashboard brings along.</p>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <span class="icon">🖧</span>
+        <h3>Nodes (multi-server)</h3>
+        <p>Accounts don't have to run on the server the dashboard itself is installed on. Additional servers get a lightweight node agent, connected via IP + a time-limited pairing code — control, console, stats, and CLI/node-agent updates all run transparently through the respective node.</p>
+      </div>
+      <div class="feature-card">
+        <span class="icon">▦</span>
+        <h3>Overview</h3>
+        <p>Collapsible cards (state is remembered): accounts table, character stats, equipment, tavern, guild, mail, battle history, activity log.</p>
+      </div>
+      <div class="feature-card">
+        <span class="icon">🗂</span>
+        <h3>Account management</h3>
+        <p>Log in once — every character on a login is found automatically across all servers. Passwords are stored AES-256-encrypted on disk. Start/stop/pause/"claim" per account, bulk actions per login.</p>
+      </div>
+      <div class="feature-card">
+        <span class="icon">⚔</span>
+        <h3>Battle history</h3>
+        <p>Real fights recorded locally by the CLI process — opponent, arena/dungeon/scrapbook, win/loss, XP/gold/honor — via the non-interactive CLI command <code>--history</code>.</p>
+      </div>
+      <div class="feature-card">
+        <span class="icon">⌨</span>
+        <h3>Web terminal</h3>
+        <p>Its own console session per account in the browser (xterm.js), including automated login click-through all the way to the running bot.</p>
+      </div>
+      <div class="feature-card">
+        <span class="icon">🛡</span>
+        <h3>Live game data</h3>
+        <p>Equipment, guild, tavern, and mail directly from the game server (read-only, local Rust service). Polling interval freely configurable (10&nbsp;min / 1×/hour / 1×/day).</p>
+      </div>
+      <div class="feature-card">
+        <span class="icon">📈</span>
+        <h3>Analytics & earnings</h3>
+        <p>SQLite-backed breakdown of XP/gold/honor per day, detected fight windows, time-series charts for level, experience, gold, mushrooms, honor, rank.</p>
+      </div>
+      <div class="feature-card">
+        <span class="icon">⚙</span>
+        <h3>Settings & templates</h3>
+        <p>Every bot config toggle right in the browser — reading and the officially supported <code>auto_*</code> toggles go through the non-interactive CLI command <code>--config</code>. Save config as a template and apply it to other characters, or import from a Windows-app backup.</p>
+      </div>
+      <div class="feature-card">
+        <span class="icon">🔔</span>
+        <h3>Notifications</h3>
+        <p>Automatically detects errors/warnings from the log output — a bell with a badge and toast popups.</p>
+      </div>
+      <div class="feature-card">
+        <span class="icon">🕶</span>
+        <h3>Anonymous mode</h3>
+        <p>Pixelates character names, e.g. for screenshots or streaming — one click, effective immediately.</p>
+      </div>
+      <div class="feature-card">
+        <span class="icon">🔁</span>
+        <h3>Auto-restart</h3>
+        <p>Characters that were active before a restart/update start back up automatically afterward — staggered, so they don't all log in at once.</p>
+      </div>
+      <div class="feature-card">
+        <span class="icon">📱</span>
+        <h3>Mobile-friendly</h3>
+        <p>Fully responsive layout — navigation as a menu, tables and console adapt to screen width.</p>
+      </div>
+      <div class="feature-card">
+        <span class="icon">⟳</span>
+        <h3>Auto update check</h3>
+        <p>CLI and dashboard permanently show their update status; one click installs automatically (git pull + rebuild or binary swap).</p>
+      </div>
+      <div class="feature-card">
+        <span class="icon">🔐</span>
+        <h3>Access protection</h3>
+        <p>One dashboard account (single admin) with a setup wizard, 12-word recovery phrase, and password change right in the interface.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="installation">
+  <div class="wrap">
+    <h2><span class="num">04</span>Installation</h2>
+    <p class="section-sub">On a fresh Debian/Ubuntu server, as root.</p>
+    <pre><code>curl -fsSL https://raw.githubusercontent.com/dandulox/MercySF_Dashboard/main/install.sh | bash</code></pre>
+    <ul class="install-steps">
+      <li>
+        <h4>Dependencies & services</h4>
+        <p>The script installs Node.js, Rust/Cargo for the sf-api bridge, build tools for native modules, and the Mercy SF CLI, sets up a self-signed TLS certificate, and starts the dashboard and sf-api bridge as systemd services.</p>
+      </li>
+      <li>
+        <h4>First visit</h4>
+        <p>The dashboard is then reachable at <code>https://&lt;server-ip&gt;:8080</code> — a setup page walks you through creating the single dashboard account.</p>
+      </li>
+      <li>
+        <h4>Updates</h4>
+        <p>Running the script again only updates code and dependencies — existing account data, certificates, and the installed CLI version are left untouched.</p>
+      </li>
+      <li>
+        <h4>Multiple servers (nodes)</h4>
+        <p>Each additional server only needs a lightweight node agent instead of the full dashboard — installable with the same script and the <code>--node</code> flag. At the end it shows the IP and a pairing code valid for 15&nbsp;minutes, which you enter in the dashboard under "Nodes".</p>
+        <pre style="margin-top:8px;"><code>curl -fsSL https://raw.githubusercontent.com/dandulox/MercySF_Dashboard/main/install.sh | bash -s -- --node</code></pre>
+      </li>
+    </ul>
+
+    <h4 style="margin-top:32px;font-size:14px;">Uninstallation</h4>
+    <pre><code>curl -fsSL https://raw.githubusercontent.com/dandulox/MercySF_Dashboard/main/install.sh | bash -s -- --uninstall</code></pre>
+    <p class="section-sub" style="margin-top:10px;">Removes <strong>everything</strong>: both systemd services, the entire <code>/opt/mercy</code> folder including dashboard code, certificates, the CLI binary, saved bot credentials, the dashboard account, and the earnings-statistics database. No intermediate step, no confirmation prompt.</p>
+  </div>
+</section>
+
+<section id="limitations">
+  <div class="wrap">
+    <h2><span class="num">05</span>Known limitations</h2>
+    <p class="section-sub">Since version 2.13.0, the CLI offers a documented, non-interactive JSON mode, which the dashboard uses for settings, battle history, and "claim". The actual bot start/login flow in the web terminal, however, still runs through the classic interactive text menu — so automation there still relies on pattern-matching the terminal output. If the wording of a CLI menu changes there, the automation can break until the code is adjusted.</p>
+    <ul class="limits-list">
+      <li><span class="dot"></span><span class="text">No native pause command — "Pause" instead turns off all active <code>auto_*</code> config toggles.</span></li>
+      <li><span class="dot"></span><span class="text">Only ~20 <code>auto_*</code> toggles are officially changeable through the CLI itself (<code>--config --set</code>) — all other settings fields are still written directly to the config file by the dashboard.</span></li>
+      <li><span class="dot"></span><span class="text">No official version API for the CLI — the update check compares MD5 hashes against the public download file.</span></li>
+      <li><span class="dot"></span><span class="text">A dashboard self-update briefly interrupts the connection while both systemd services restart.</span></li>
+      <li><span class="dot"></span><span class="text"><code>sf-api</code> doesn't provide readable item names (only numeric IDs) — the equipment display shows slot, type, attributes, and quality, not display names.</span></li>
+      <li><span class="dot"></span><span class="text">Daily gold earnings are a net change per time window (can include expenses) — XP and honor are exact.</span></li>
+      <li><span class="dot"></span><span class="text">No rate limiting on login/password-reset attempts — mainly relevant if the dashboard is ever exposed beyond its own LAN.</span></li>
+      <li><span class="dot"></span><span class="text">The activity log on the overview page stays empty for node accounts, since their PTY output doesn't flow through the dashboard's local log buffer — analytics, earnings, and node status do work for node accounts, though.</span></li>
+      <li><span class="dot"></span><span class="text">A node agent only ever accepts exactly one paired dashboard at a time — re-pairing silently disconnects a previously connected dashboard.</span></li>
+    </ul>
+  </div>
+</section>
+
+<section id="resources">
+  <div class="wrap">
+    <h2><span class="num">06</span>Resource usage</h2>
+    <p class="section-sub">Two real test runs with different hardware and account counts.</p>
+    <div class="bench-grid">
+      <div class="bench-card">
+        <h4>4 vCPU / 8 GB RAM — 11 running accounts</h4>
+        <table class="bench-table">
+          <tr><td>CPU usage</td><td>1.8%</td></tr>
+          <tr><td>RAM usage</td><td>217.6 MB of 8 GB (2.72%)</td></tr>
+          <tr><td>Boot disk</td><td>13 GB of 49 GB (28%)</td></tr>
+        </table>
+      </div>
+      <div class="bench-card">
+        <h4>1 vCPU / 1 GB RAM (LXC) — 30 running accounts</h4>
+        <table class="bench-table">
+          <tr><td>CPU usage</td><td>2.82%</td></tr>
+          <tr><td>RAM usage</td><td>226.7 MB of 1.07 GB (21.11%)</td></tr>
+          <tr><td>Boot disk</td><td>3.95 GB of 8.35 GB (47.36%)</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="stack">
+  <div class="wrap">
+    <h2><span class="num">07</span>Tech stack</h2>
+    <p class="section-sub">Node.js + Express in the backend, vanilla JS with ES modules in the frontend — deliberately without a build step. The sf-api integration is a separate, stateless Rust service that listens on <code>127.0.0.1</code> only.</p>
+    <div class="stack-pills">
+      <span class="stack-pill">Node.js + Express</span>
+      <span class="stack-pill">Vanilla JS (ES modules)</span>
+      <span class="stack-pill">node-pty + xterm.js</span>
+      <span class="stack-pill">Chart.js</span>
+      <span class="stack-pill">WebSocket (ws)</span>
+      <span class="stack-pill">better-sqlite3</span>
+      <span class="stack-pill">Rust + axum + sf-api</span>
+      <span class="stack-pill">AES-256-GCM</span>
+      <span class="stack-pill">node-agent (multi-server)</span>
+    </div>
+  </div>
+</section>
+
+<section id="acknowledgements">
+  <div class="wrap">
+    <h2><span class="num">08</span>Acknowledgements</h2>
+    <p class="section-sub">This dashboard only exists because others did the actual groundwork.</p>
+    <div class="thanks-grid">
+      <div class="thanks-card">
+        <h3>Mercy SF — Sensei Issei</h3>
+        <p>The CLI/bot itself that this dashboard is built around.</p>
+        <a class="btn btn-secondary" style="padding:8px 16px;font-size:13px;" href="https://mercysf.app" target="_blank" rel="noopener">mercysf.app ↗</a>
+      </div>
+      <div class="thanks-card">
+        <h3>sf-api — the-marenga</h3>
+        <p>The Rust library through which this dashboard queries live data directly from the game server.</p>
+        <a class="btn btn-secondary" style="padding:8px 16px;font-size:13px;" href="https://github.com/the-marenga/sf-api" target="_blank" rel="noopener">Repository ↗</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>Licensed under <a href="https://github.com/dandulox/MercySF_Dashboard/blob/main/LICENSE" target="_blank" rel="noopener">AGPLv3</a>.</div>
+    <div class="foot-links">
+      <a href="https://github.com/dandulox/MercySF_Dashboard" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/dandulox/MercySF_Dashboard#readme" target="_blank" rel="noopener">README</a>
+      <a href="https://ko-fi.com/senseiissei" target="_blank" rel="noopener">Ko-fi</a>
+    </div>
+  </div>
+</footer>
+
+<div class="lightbox" id="lightbox">
+  <button type="button" class="lightbox-close" id="lightbox-close" aria-label="Close">✕</button>
+  <img id="lightbox-img" src="" alt="" />
+</div>
+
+<script>
+  (function () {
+    var lightbox = document.getElementById('lightbox');
+    var lightboxImg = document.getElementById('lightbox-img');
+
+    function open(src, alt) {
+      lightboxImg.src = src;
+      lightboxImg.alt = alt || '';
+      lightbox.classList.add('open');
+    }
+    function close() {
+      lightbox.classList.remove('open');
+      lightboxImg.src = '';
+    }
+
+    document.querySelectorAll('.shot-frame').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var img = btn.querySelector('img');
+        open(btn.dataset.full, img ? img.alt : '');
+      });
+    });
+
+    lightbox.addEventListener('click', function (ev) {
+      if (ev.target === lightbox) close();
+    });
+    document.getElementById('lightbox-close').addEventListener('click', close);
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape') close();
+    });
+  })();
+</script>
+
+</body>
+</html>
