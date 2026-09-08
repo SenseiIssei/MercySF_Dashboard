@@ -15,10 +15,14 @@ function remoteNodeFor(profile) {
   return nodeRegistry.get(profile.nodeId);
 }
 
-function readFile(accountId) {
+function characterFilePath(accountId) {
   const dataDir = findDataDir();
   if (!dataDir) { const e = new Error('Kein Datenverzeichnis gefunden'); e.status = 404; throw e; }
-  const filePath = path.join(dataDir, 'characters', `${accountId}.json`);
+  return path.join(dataDir, 'characters', `${accountId}.json`);
+}
+
+function readFile(accountId) {
+  const filePath = characterFilePath(accountId);
   if (!fs.existsSync(filePath)) { const e = new Error('Keine Einstellungen für diesen Account'); e.status = 404; throw e; }
   try {
     return { filePath, settings: JSON.parse(fs.readFileSync(filePath, 'utf8')) };
@@ -27,6 +31,25 @@ function readFile(accountId) {
     err.status = 500;
     throw err;
   }
+}
+
+// Schreibt die Felder, für die die CLI keinen --set-Weg anbietet, direkt in die Config-Datei.
+// Fehlt die Datei noch (die CLI legt sie für einen Charakter erst an, wenn sie selbst etwas
+// daran ändert), wird sie aus der eben gelesenen CLI-Vollkonfiguration erzeugt, statt das
+// Speichern mit "Keine Einstellungen für diesen Account" abzubrechen — der vollständige,
+// gültige Stand ist an dieser Stelle bekannt, es fehlt nur die Datei auf der Platte. Gleiches
+// Vorgehen wie beim Anwenden einer Vorlage (routes/settings-templates.js).
+function writeFileUpdates(accountId, fileUpdates, cliConfig) {
+  const filePath = characterFilePath(accountId);
+  let current;
+  if (fs.existsSync(filePath)) {
+    ({ settings: current } = readFile(accountId));
+  } else {
+    current = { ...cliConfig };
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  }
+  Object.assign(current, fileUpdates);
+  fs.writeFileSync(filePath, JSON.stringify(current, null, 2));
 }
 
 // Die CLI-Config-Datei bleibt weiterhin der Fallback, wenn für den Account kein Passwort
@@ -116,9 +139,7 @@ router.put('/:accountId', express.json(), async (req, res) => {
       // Für alles außerhalb der settable-Liste (Zahlen, Strings, restliche Booleans) bietet die
       // CLI aktuell keinen unterstützten Weg — Fallback bleibt der direkte Datei-Zugriff.
       if (Object.keys(fileUpdates).length) {
-        const { filePath, settings: onDisk } = readFile(req.params.accountId);
-        Object.assign(onDisk, fileUpdates);
-        fs.writeFileSync(filePath, JSON.stringify(onDisk, null, 2));
+        writeFileUpdates(req.params.accountId, fileUpdates, config);
         Object.assign(merged, fileUpdates);
       }
 
