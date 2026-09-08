@@ -282,6 +282,7 @@ export default {
   'settings.readOnlyTitle': 'Nur lesbar',
   'settings.saveBtn': 'Speichern',
   'settings.saved': 'Gespeichert.',
+  'settings.savedButIgnored': 'Gespeichert — diese Felder hat die CLI aber nicht übernommen: {{keys}}',
 
   // accounts.js (public/pages/accounts.js)
   'accounts.title': 'Account-Verwaltung',
