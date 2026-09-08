@@ -5,6 +5,21 @@ Changelog](https://keepachangelog.com/). History before 2.0.0 lives in
 `git log` — this file starts tracking from the "Version 2" design
 overhaul.
 
+## [2.14.8] - 2026-09-08
+
+### Fixed
+- The notification main switch `auto_notify` ("Enable notifications") was sorted into "Other"
+  instead of "Notifications": the group assignment only matched the `notify_` prefix, which
+  `auto_notify` doesn't have. The Notifications group therefore showed the Discord webhook URL,
+  the Telegram bot token and the Telegram chat ID — but not the one switch without which all
+  three stay inert.
+- Saving a setting always reported "Saved.", even when the value never arrived. The response of
+  `PUT /api/settings/:accountId` is the configuration that was actually written — for the
+  `auto_*` toggles that go through the CLI's `--config --set` it only contains what the CLI
+  itself reported back as changed. The page now compares against that response, writes the
+  confirmed values back into the form, and names the fields the CLI did not apply instead of
+  reporting success for them.
+
 ## [2.14.7] - 2026-09-08
 
 ### Fixed
