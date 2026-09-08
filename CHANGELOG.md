@@ -5,6 +5,18 @@ Changelog](https://keepachangelog.com/). History before 2.0.0 lives in
 `git log` — this file starts tracking from the "Version 2" design
 overhaul.
 
+## [2.14.7] - 2026-09-08
+
+### Fixed
+- Saving any setting outside the CLI's ~20 officially settable `auto_*` toggles (e.g. "Detect free
+  beer slots" / `beer_auto_detect_free`, all numbers and strings) failed with "Keine Einstellungen
+  für diesen Account" on accounts whose `characters/<accountId>.json` doesn't exist yet. The
+  settings page itself loaded fine in that state, because reading goes through the CLI's
+  `--config` — only the write path fell back to the file and gave up when it was missing, so every
+  visible toggle looked editable but couldn't be saved. Now the file is created from the
+  configuration the CLI just reported (same approach as applying a settings template), instead of
+  aborting the save. Applies to local accounts and to accounts running on a paired node.
+
 ## [2.14.6] - 2026-09-02
 
 ### Fixed
