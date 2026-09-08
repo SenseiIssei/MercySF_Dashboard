@@ -271,6 +271,7 @@ export default {
   'settings.readOnlyTitle': 'Read-only',
   'settings.saveBtn': 'Save',
   'settings.saved': 'Saved.',
+  'settings.savedButIgnored': 'Saved — but the CLI did not apply these fields: {{keys}}',
 
   'accounts.title': 'Account Management',
   'accounts.addTitle': 'Add a new account',
