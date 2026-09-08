@@ -197,15 +197,35 @@ app.post('/profiles/:id/claim', async (req, res) => {
   }
 });
 
-function loadCharacterSettings(profile) {
+function characterFilePath(profile) {
   if (!profile.server || !profile.characterName) {
     throw Object.assign(new Error('Noch kein Charakter für dieses Profil bekannt'), { status: 400 });
   }
   const dataDir = findDataDir();
   if (!dataDir) throw Object.assign(new Error('Kein Datenverzeichnis gefunden'), { status: 404 });
-  const filePath = path.join(dataDir, 'characters', `${accountIdFor(profile.server, profile.characterName)}.json`);
+  return path.join(dataDir, 'characters', `${accountIdFor(profile.server, profile.characterName)}.json`);
+}
+
+function loadCharacterSettings(profile) {
+  const filePath = characterFilePath(profile);
   if (!fs.existsSync(filePath)) throw Object.assign(new Error('Keine Einstellungen für diesen Account gefunden'), { status: 404 });
   return { filePath, settings: JSON.parse(fs.readFileSync(filePath, 'utf8')) };
+}
+
+// Gegenstück zu writeFileUpdates() im Dashboard (routes/settings.js): fehlt die Config-Datei
+// noch, wird sie aus der von der CLI gemeldeten Vollkonfiguration angelegt, statt das Speichern
+// nicht-settable Felder mit 404 abzubrechen.
+function writeCharacterFileUpdates(profile, fileUpdates, cliConfig) {
+  const filePath = characterFilePath(profile);
+  let current;
+  if (fs.existsSync(filePath)) {
+    current = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } else {
+    current = { ...cliConfig };
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  }
+  Object.assign(current, fileUpdates);
+  fs.writeFileSync(filePath, JSON.stringify(current, null, 2));
 }
 
 app.post('/profiles/:id/pause', (req, res) => {
@@ -297,9 +317,7 @@ app.put('/profiles/:id/settings', async (req, res) => {
         for (const change of result.changed || []) merged[change.key] = change.to;
       }
       if (Object.keys(fileUpdates).length) {
-        const { filePath, settings: onDisk } = loadCharacterSettings(profile);
-        Object.assign(onDisk, fileUpdates);
-        fs.writeFileSync(filePath, JSON.stringify(onDisk, null, 2));
+        writeCharacterFileUpdates(profile, fileUpdates, config);
         Object.assign(merged, fileUpdates);
       }
       return res.json(merged);
