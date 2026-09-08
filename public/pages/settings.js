@@ -36,7 +36,10 @@ function groupLabels() {
 
 function groupKey(key) {
   const groups = [
-    ['notifications', /^notify_/],
+    // auto_notify muss ausdrücklich mit rein: es ist der Hauptschalter der Gruppe, fängt aber
+    // nicht mit notify_ an und landete deshalb unter "Sonstiges" — ausgerechnet der Schalter,
+    // ohne den die drei notify_*-Felder darüber wirkungslos bleiben.
+    ['notifications', /^(notify_|auto_notify$)/],
     ['timing', /^(poll_interval_secs|humanize_|active_hours_|active_windows|diagnostic_logging|module_priorities)/],
     ['world_boss', /^world_boss_/],
     ['guild', /^(auto_guild|guild_|start_guild)/],
@@ -779,12 +782,28 @@ export default {
         status.textContent = t('settings.saving');
         try {
           const accountId = ctx.getAccountId();
-          await ctx.fetchJSON(`/api/settings/${encodeURIComponent(accountId)}`, {
+          const sent = { ...pending };
+          const saved = await ctx.fetchJSON(`/api/settings/${encodeURIComponent(accountId)}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(pending),
+            body: JSON.stringify(sent),
           });
-          status.textContent = t('settings.saved');
+          // Die Antwort ist der tatsächlich gespeicherte Gesamtstand. Bei den auto_*-Schaltern,
+          // die über "--config --set" laufen, übernimmt der Server nur das, was die CLI selbst
+          // als geändert zurückmeldet — ein von der CLI verworfener Wert sah im Formular bisher
+          // trotzdem nach "Gespeichert" aus. Deshalb wird gegen die Antwort abgeglichen, statt
+          // blind Erfolg zu melden.
+          const ignored = [];
+          body.querySelectorAll('input[data-key]').forEach(input => {
+            const key = input.dataset.key;
+            if (!(key in sent) || !saved || !(key in saved)) return;
+            if (saved[key] !== sent[key]) ignored.push(key);
+            if (input.dataset.type === 'boolean') input.checked = !!saved[key];
+            else input.value = saved[key];
+          });
+          status.textContent = ignored.length
+            ? t('settings.savedButIgnored', { keys: ignored.join(', ') })
+            : t('settings.saved');
           pending = {};
         } catch (err) {
           status.textContent = t('analytics.loadError', { message: err.message });
