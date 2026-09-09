@@ -5,6 +5,26 @@ Changelog](https://keepachangelog.com/). History before 2.0.0 lives in
 `git log` — this file starts tracking from the "Version 2" design
 overhaul.
 
+## [2.15.0] - 2026-09-09
+
+### Added
+- A second, node-centric dashboard UI at `/v2/` (beta), switchable from System-Einstellungen →
+  General ("Neues UI öffnen (Beta)") without losing access to the classic UI — the choice is
+  saved server-side (`uiVersion` in panel settings) and both UIs redirect to whichever is
+  currently preferred. A "keep current UI" control on the classic side and a `?ui=v1` URL
+  fallback both make the switch reversible even if the new UI fails to load.
+- The new UI's centerpiece is a Node-Übersicht: a grid of per-node cards showing live
+  online/VPN status (including the connected VPN profile's name), CPU load/RAM/uptime as
+  compact chips, CLI/Node-Agent update status, and every account on that node with its running
+  state, current activity, and Start/Pause/Stop controls.
+- A per-account randomizer badge (current or next scheduled time window) and, on hover over a
+  character name, a tooltip with level/class/experience/silver/honor/rank/mushrooms plus the
+  full list of today's planned randomizer blocks.
+- A switch between grouping the overview by node or by account/character (flat list), remembered
+  per browser.
+- A dedicated detail page per node (one link per paired node in the new UI's sidebar) with
+  larger stat tiles, the full account table, and CLI/Node-Agent version status for that node.
+
 ## [2.14.8] - 2026-09-08
 
 ### Fixed
