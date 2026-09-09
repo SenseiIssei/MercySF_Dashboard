@@ -510,6 +510,7 @@ export default {
   'systemSettings.uiVersionTitle': 'Dashboard-Oberfläche',
   'systemSettings.uiVersionDesc': 'Neues, node-zentriertes UI ausprobieren (Beta) — jederzeit über den Link im neuen UI zurückwechselbar.',
   'systemSettings.uiVersionSwitchBtn': 'Neues UI öffnen (Beta)',
+  'systemSettings.uiVersionKeepBtn': 'Aktuelles UI beibehalten',
   'systemSettings.applyBtn': 'Übernehmen',
   'systemSettings.saving': 'Speichere...',
   'systemSettings.applied': 'Übernommen.',

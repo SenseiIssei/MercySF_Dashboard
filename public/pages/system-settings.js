@@ -88,7 +88,9 @@ export default {
           <h3>${t('systemSettings.uiVersionTitle')}</h3>
           <div class="panel-settings-desc">${t('systemSettings.uiVersionDesc')}</div>
           <div class="panel-settings-row">
-            <button class="btn btn-primary" id="ui-version-switch-btn" style="width:auto;padding:7px 16px;">${t('systemSettings.uiVersionSwitchBtn')}</button>
+            <button class="btn btn-primary" id="ui-version-v1-btn" style="width:auto;padding:7px 16px;">${t('systemSettings.uiVersionKeepBtn')}</button>
+            <button class="btn btn-primary" id="ui-version-v2-btn" style="width:auto;padding:7px 16px;">${t('systemSettings.uiVersionSwitchBtn')}</button>
+            <span id="ui-version-status"></span>
           </div>
         </div>
       </div>
@@ -172,7 +174,53 @@ export default {
       }
     });
 
-    wrap.querySelector('#ui-version-switch-btn').addEventListener('click', async () => {
+    // --- UI Version ---
+    let currentUiVersion = 'v1'; // default
+
+    async function loadUiVersion() {
+      const v1Btn = wrap.querySelector('#ui-version-v1-btn');
+      const v2Btn = wrap.querySelector('#ui-version-v2-btn');
+      const status = wrap.querySelector('#ui-version-status');
+      try {
+        const data = await ctx.fetchJSON('/api/panel-settings');
+        currentUiVersion = data.uiVersion || 'v1';
+        updateUiVersionButtons();
+      } catch (err) {
+        status.textContent = t('analytics.loadError', { message: err.message });
+      }
+    }
+
+    function updateUiVersionButtons() {
+      const v1Btn = wrap.querySelector('#ui-version-v1-btn');
+      const v2Btn = wrap.querySelector('#ui-version-v2-btn');
+      const isV1Active = currentUiVersion === 'v1';
+      v1Btn.disabled = isV1Active;
+      v2Btn.disabled = currentUiVersion === 'v2';
+      if (isV1Active) {
+        v1Btn.title = t('common.status') + ': aktiv';
+      } else {
+        v2Btn.title = t('common.status') + ': aktiv';
+      }
+    }
+
+    wrap.querySelector('#ui-version-v1-btn').addEventListener('click', async () => {
+      const status = wrap.querySelector('#ui-version-status');
+      status.textContent = t('systemSettings.saving');
+      try {
+        await ctx.fetchJSON('/api/panel-settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uiVersion: 'v1' }),
+        });
+        currentUiVersion = 'v1';
+        updateUiVersionButtons();
+        status.textContent = t('systemSettings.applied');
+      } catch (err) {
+        status.textContent = t('analytics.loadError', { message: err.message });
+      }
+    });
+
+    wrap.querySelector('#ui-version-v2-btn').addEventListener('click', async () => {
       try {
         await ctx.fetchJSON('/api/panel-settings', {
           method: 'POST',
@@ -440,6 +488,7 @@ export default {
     }
 
     loadPanelSettings();
+    loadUiVersion();
     loadVpnProfiles().then(loadVpnTargets);
     loadTelemetrySettings();
 

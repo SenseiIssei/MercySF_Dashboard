@@ -496,6 +496,7 @@ export default {
   'systemSettings.uiVersionTitle': 'Dashboard UI',
   'systemSettings.uiVersionDesc': 'Try the new, node-centric UI (beta) — switch back anytime via the link in the new UI.',
   'systemSettings.uiVersionSwitchBtn': 'Open new UI (beta)',
+  'systemSettings.uiVersionKeepBtn': 'Keep current UI',
   'systemSettings.applyBtn': 'Apply',
   'systemSettings.saving': 'Saving...',
   'systemSettings.applied': 'Applied.',
