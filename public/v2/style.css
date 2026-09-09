@@ -41,6 +41,8 @@ body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Inter
 }
 .v2-nav a:hover { background: var(--panel-2); color: var(--text); }
 .v2-nav a.active { background: var(--panel-2); color: var(--text); }
+.v2-nav-node { font-size: 12.5px; padding-left: 22px !important; }
+.v2-nav-divider { border: none; border-top: 1px solid var(--border); margin: 8px 4px; }
 .v2-switch-link { color: var(--muted); font-size: 12px; text-decoration: none; padding-top: 16px; border-top: 1px solid var(--border); }
 .v2-switch-link:hover { color: var(--text); }
 
