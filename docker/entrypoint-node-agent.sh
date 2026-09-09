@@ -34,4 +34,15 @@ elif cli_arch_mismatches; then
   chmod +x "$CLI_PATH"
 fi
 
+SFAPI_BRIDGE_PATH="/opt/mercy/mercy-sfapi-bridge"
+case "$(uname -m)" in
+  x86_64|amd64) SFAPI_BRIDGE_DOWNLOAD_URL="https://github.com/dandulox/MercySF_Dashboard/releases/latest/download/mercy-sfapi-bridge-linux-x64" ;;
+  aarch64|arm64) SFAPI_BRIDGE_DOWNLOAD_URL="https://github.com/dandulox/MercySF_Dashboard/releases/latest/download/mercy-sfapi-bridge-linux-arm64" ;;
+esac
+if [ -n "${SFAPI_BRIDGE_DOWNLOAD_URL:-}" ] && [ ! -f "$SFAPI_BRIDGE_PATH" ]; then
+  echo "==> sf-api-bridge herunterladen"
+  curl -fsSL -o "$SFAPI_BRIDGE_PATH" "$SFAPI_BRIDGE_DOWNLOAD_URL"
+  chmod +x "$SFAPI_BRIDGE_PATH"
+fi
+
 exec node server.js
