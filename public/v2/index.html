@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mercy SF — Dashboard v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/v2/style.css" />
+<script>
+  (function () {
+    var t = localStorage.getItem('mercy-theme');
+    if (!t) t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
+</head>
+<body>
+  <div class="v2-shell">
+    <aside class="v2-sidebar">
+      <div class="v2-brand">
+        <div class="v2-brand-icon">⚔</div>
+        <div class="v2-brand-title">Mercy SF</div>
+      </div>
+      <nav class="v2-nav" id="v2-nav"></nav>
+      <a class="v2-switch-link" href="#" id="v2-switch-to-v1">← Klassisches UI</a>
+    </aside>
+    <main class="v2-content">
+      <header class="v2-topbar">
+        <h1 class="v2-page-title" id="v2-page-title"></h1>
+        <div class="v2-topbar-right">
+          <button class="v2-icon-btn" id="v2-theme-toggle-btn" title="Hell-/Dunkelmodus umschalten">◐</button>
+          <button class="v2-icon-btn" id="v2-logout-btn" title="Abmelden">⏻</button>
+        </div>
+      </header>
+      <div id="v2-page-root"></div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initI18nAuthenticated } from '/lib/i18n.js';
+    async function fetchJSON(url, opts) {
+      const res = await fetch(url, opts);
+      if (!res.ok) throw new Error(res.statusText);
+      return res.json();
+    }
+    // Redirect-Fallback: alte Lesezeichen/Direktlinks landen automatisch im aktuell bevorzugten UI.
+    try {
+      const settings = await fetchJSON('/api/panel-settings');
+      if (settings.uiVersion === 'v1') { location.href = '/'; }
+    } catch (e) { /* Panel-Settings nicht erreichbar — im v2-UI bleiben statt zu blockieren */ }
+    await initI18nAuthenticated(fetchJSON);
+  </script>
+  <script type="module" src="/v2/router.js"></script>
+</body>
+</html>
