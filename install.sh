@@ -48,6 +48,12 @@ case "$(uname -m)" in
     ;;
 esac
 
+case "$(uname -m)" in
+  x86_64|amd64) SFAPI_BRIDGE_DOWNLOAD_URL="https://github.com/dandulox/MercySF_Dashboard/releases/latest/download/mercy-sfapi-bridge-linux-x64" ;;
+  aarch64|arm64) SFAPI_BRIDGE_DOWNLOAD_URL="https://github.com/dandulox/MercySF_Dashboard/releases/latest/download/mercy-sfapi-bridge-linux-arm64" ;;
+esac
+SFAPI_BRIDGE_PATH="$INSTALL_DIR/mercy-sfapi-bridge"
+
 cli_arch_mismatches() {
   local machine_byte
   machine_byte="$(od -An -tx1 -j 18 -N 1 "$CLI_PATH" 2>/dev/null | tr -d ' ')"
@@ -391,7 +397,7 @@ if [[ "$INSTALL_MODE" == "docker" ]]; then
   exit 0
 fi
 
-if [[ "$NODE_ONLY" == "true" ]]; then TOTAL_STEPS=7; else TOTAL_STEPS=10; fi
+if [[ "$NODE_ONLY" == "true" ]]; then TOTAL_STEPS=8; else TOTAL_STEPS=10; fi
 STEP=0
 
 progress "Updating packages and installing build dependencies"
@@ -467,6 +473,10 @@ if [[ "$NODE_ONLY" == "true" ]]; then
   cd "$NODE_AGENT_DIR"
   run_step "npm install" env JOBS="$BUILD_JOBS" npm install --omit=dev --no-audit --no-fund
   mkdir -p "$NODE_AGENT_DIR/data"
+
+  progress "Downloading the sf-api bridge (equipment/guild/tavern/mail lookups for accounts on this node)"
+  curl -fsSL -o "$SFAPI_BRIDGE_PATH" "$SFAPI_BRIDGE_DOWNLOAD_URL"
+  chmod +x "$SFAPI_BRIDGE_PATH"
 
   progress "Setting up the node-agent systemd service"
   cp "$DASHBOARD_DIR/systemd/mercy-node-agent.service" /etc/systemd/system/mercy-node-agent.service
