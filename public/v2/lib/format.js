@@ -23,6 +23,23 @@ function nowMinutes() {
   return d.getHours() * 60 + d.getMinutes();
 }
 
+// Kompakte "Feinstatistik"-Box fürs Hover-Tooltip auf einem Charakternamen — nutzt den
+// analytics-Snapshot, den `/api/accounts` bereits pro Account mitliefert (`acc.stats`), keine
+// zusätzliche Anfrage nötig.
+export function statsTooltipRows(acc, t) {
+  const s = acc.stats;
+  if (!s) return [[t('v2.tooltipNoData'), '']];
+  const rows = [];
+  if (s.level != null) rows.push([t('v2.tooltipLevel'), String(s.level)]);
+  if (acc.characterClass) rows.push([t('v2.tooltipClass'), acc.characterClass]);
+  if (s.experience != null) rows.push([t('v2.tooltipExperience'), s.experience.toLocaleString('de-DE')]);
+  if (s.silver != null) rows.push([t('v2.tooltipSilver'), s.silver.toLocaleString('de-DE')]);
+  if (s.honor != null) rows.push([t('v2.tooltipHonor'), s.honor.toLocaleString('de-DE')]);
+  if (s.rank != null) rows.push([t('v2.tooltipRank'), String(s.rank)]);
+  if (s.mushrooms != null) rows.push([t('v2.tooltipMushrooms'), String(s.mushrooms)]);
+  return rows.length ? rows : [[t('v2.tooltipNoData'), '']];
+}
+
 // Findet aus einem Randomizer-Tagesplan (Blöcke + Stadtwache-Pulse) das gerade laufende Fenster
 // oder, falls keins läuft, das nächste anstehende — für eine kompakte Anzeige pro Account.
 // Rückgabe: { active: bool, start, end } in Minuten, oder null wenn für heute nichts (mehr)

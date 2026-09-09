@@ -1,10 +1,22 @@
 import { t } from '/lib/i18n.js';
-import { escapeHtml, fmtUptime, fmtMinutesAsTime, currentOrNextWindow } from '/v2/lib/format.js';
+import { escapeHtml, fmtUptime, fmtMinutesAsTime, currentOrNextWindow, statsTooltipRows } from '/v2/lib/format.js';
 
 function accountStatusLabel(acc) {
   if (acc.paused) return t('v2.accountPaused');
   if (acc.running) return acc.currentActivity ? acc.currentActivity : t('v2.accountRunning');
   return t('v2.accountStopped');
+}
+
+function charNameWithTooltip(acc) {
+  const rows = statsTooltipRows(acc, t);
+  return `
+    <span class="v2-char-tooltip-wrap">
+      <span class="char-name">${escapeHtml(acc.charName)}</span>
+      <span class="v2-char-tooltip">
+        ${rows.map(([label, value]) => `<div class="v2-char-tooltip-row"><span>${escapeHtml(label)}</span>${value ? `<span>${escapeHtml(value)}</span>` : ''}</div>`).join('')}
+      </span>
+    </span>
+  `;
 }
 
 function randomizerText(window) {
@@ -32,6 +44,15 @@ export default {
       .v2-detail-table tr:last-child td { border-bottom: none; }
       .v2-update-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
       .v2-update-row .label { width: 100px; color: var(--muted); font-size: 12.5px; }
+      .v2-char-tooltip-wrap { position: relative; }
+      .v2-char-tooltip {
+        display: none; position: absolute; bottom: 100%; left: 0; margin-bottom: 6px; min-width: 160px;
+        background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-md);
+        padding: 8px 10px; font-size: 11.5px; box-shadow: 0 6px 18px rgba(0,0,0,0.35); z-index: 20;
+      }
+      .v2-char-tooltip-wrap:hover .v2-char-tooltip { display: block; }
+      .v2-char-tooltip-row { display: flex; justify-content: space-between; gap: 14px; padding: 1px 0; }
+      .v2-char-tooltip-row span:first-child { color: var(--muted); }
     `);
 
     const nodeId = ctx.routeParams?.nodeId;
@@ -117,7 +138,7 @@ export default {
                 ${accounts.map(acc => `
                   <tr data-profile-id="${escapeHtml(acc.profileId || '')}" data-username="${escapeHtml(acc.username || '')}">
                     <td><span class="v2-dot ${acc.running ? 'online' : 'offline'}"></span></td>
-                    <td class="char-name">${escapeHtml(acc.charName)}${acc.stats?.level ? ` <span style="color:var(--muted);font-size:11.5px;">Lv.${escapeHtml(String(acc.stats.level))}</span>` : ''}</td>
+                    <td>${charNameWithTooltip(acc)}</td>
                     <td>${escapeHtml(accountStatusLabel(acc))}</td>
                     <td data-role="randomizer">—</td>
                     <td>
