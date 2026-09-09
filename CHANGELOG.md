@@ -5,6 +5,16 @@ Changelog](https://keepachangelog.com/). History before 2.0.0 lives in
 `git log` — this file starts tracking from the "Version 2" design
 overhaul.
 
+## [2.15.1] - 2026-09-09
+
+### Fixed
+- VPN switching for the "Lokal (dieser Server)" target failed with `spawn wg-quick ENOENT` on
+  the Docker-based dashboard install: `Dockerfile.dashboard` never installed `wireguard-tools`
+  (unlike `Dockerfile.node-agent`, which already had it), and the `dashboard` service in
+  `docker-compose.yml` was also missing the `NET_ADMIN` capability and `/dev/net/tun` device
+  access that `wg-quick` needs to actually create a tunnel interface. Both now match what the
+  node containers already had.
+
 ## [2.15.0] - 2026-09-09
 
 ### Added
