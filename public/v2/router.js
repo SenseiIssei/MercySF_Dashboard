@@ -1,3 +1,5 @@
+import { t } from '/lib/i18n.js';
+
 async function fetchJSON(url, opts) {
   const res = await fetch(url, opts);
   if (res.status === 401) {
@@ -23,7 +25,7 @@ function injectStyleOnce(id, css) {
 const ctx = { fetchJSON, injectStyleOnce };
 
 const PAGES = [
-  { id: 'nodes-overview', label: 'Node-Übersicht', icon: '🖧' },
+  { id: 'nodes-overview', label: 'v2.nodesOverviewLabel', icon: '🖧' },
 ];
 
 let currentUnmount = null;
@@ -35,7 +37,7 @@ async function renderRoute() {
   document.querySelectorAll('#v2-nav a').forEach(el => {
     el.classList.toggle('active', el.dataset.page === pageMeta.id);
   });
-  document.getElementById('v2-page-title').textContent = pageMeta.label;
+  document.getElementById('v2-page-title').textContent = t(pageMeta.label);
 
   const root = document.getElementById('v2-page-root');
   if (typeof currentUnmount === 'function') {
@@ -50,14 +52,14 @@ async function renderRoute() {
     const result = page.mount(root, ctx);
     if (typeof result === 'function') currentUnmount = result;
   } catch (err) {
-    root.innerHTML = `<div class="v2-card"><p>Fehler beim Laden von "${pageMeta.id}": ${err.message}</p></div>`;
+    root.innerHTML = `<div class="v2-card"><p>${t('v2.pageLoadError', { page: pageMeta.id, message: err.message })}</p></div>`;
   }
 }
 
 function renderNav() {
   const nav = document.getElementById('v2-nav');
   nav.innerHTML = PAGES.map(p =>
-    `<a data-page="${p.id}" href="#/${p.id}"><span>${p.icon}</span> ${p.label}</a>`
+    `<a data-page="${p.id}" href="#/${p.id}"><span>${p.icon}</span> ${t(p.label)}</a>`
   ).join('');
 }
 

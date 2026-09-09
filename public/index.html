@@ -165,7 +165,7 @@
     }
     try {
       const settings = await fetchJSON('/api/panel-settings');
-      if (settings.uiVersion === 'v2') { location.href = '/v2/'; }
+      if (settings.uiVersion === 'v2' && !location.search.includes('ui=v1')) { location.href = '/v2/'; }
     } catch (e) { /* Panel-Settings nicht erreichbar — im aktuellen UI bleiben */ }
     await initI18nAuthenticated(fetchJSON);
   </script>
