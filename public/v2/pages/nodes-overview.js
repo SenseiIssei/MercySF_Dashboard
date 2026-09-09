@@ -1,5 +1,5 @@
 import { t } from '/lib/i18n.js';
-import { escapeHtml, fmtUptime, fmtMinutesAsTime, currentOrNextWindow, statsTooltipRows } from '/v2/lib/format.js';
+import { escapeHtml, fmtUptime, fmtMinutesAsTime, currentOrNextWindow, statsTooltipRows, formatPlanBlocks } from '/v2/lib/format.js';
 
 const MODE_STORAGE_KEY = 'mercy-v2-overview-mode';
 
@@ -25,8 +25,17 @@ function charNameWithTooltip(acc) {
       <span class="char-name">${escapeHtml(acc.charName)}</span>
       <span class="v2-char-tooltip">
         ${rows.map(([label, value]) => `<div class="v2-char-tooltip-row"><span>${escapeHtml(label)}</span>${value ? `<span>${escapeHtml(value)}</span>` : ''}</div>`).join('')}
+        <div class="v2-char-tooltip-blocks" data-role="randomizer-blocks"></div>
       </span>
     </span>
+  `;
+}
+
+function randomizerBlocksHtml(blocks) {
+  if (!blocks.length) return '';
+  return `
+    <div class="v2-char-tooltip-blocks-title">${t('v2.tooltipPlannedToday')}</div>
+    ${blocks.map(b => `<div class="v2-char-tooltip-row"><span>${escapeHtml(b)}</span></div>`).join('')}
   `;
 }
 
@@ -89,6 +98,9 @@ export default {
       .v2-char-tooltip-wrap:hover .v2-char-tooltip { display: block; }
       .v2-char-tooltip-row { display: flex; justify-content: space-between; gap: 14px; padding: 1px 0; }
       .v2-char-tooltip-row span:first-child { color: var(--muted); }
+      .v2-char-tooltip-blocks { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); }
+      .v2-char-tooltip-blocks:empty { display: none; }
+      .v2-char-tooltip-blocks-title { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 3px; }
       .v2-account-node-badge { font-size: 10.5px; color: var(--accent); cursor: pointer; }
       .v2-account-node-badge:hover { text-decoration: underline; }
     `);
@@ -306,10 +318,12 @@ export default {
         if (!acc.username || !randomizerConfigs[acc.username]?.enabled) return;
         ctx.fetchJSON(`/api/randomizer/plan/${encodeURIComponent(acc.username)}`)
           .then(({ plan }) => {
-            const el = grid.querySelector(`.v2-account-row[data-username="${CSS.escape(acc.username)}"] [data-role="randomizer"]`);
-            if (!el) return;
-            const window = currentOrNextWindow(plan, randomizerSettings.stadtwacheDurationMin);
-            el.innerHTML = randomizerBadge(window);
+            const row = grid.querySelector(`.v2-account-row[data-username="${CSS.escape(acc.username)}"]`);
+            if (!row) return;
+            const badgeEl = row.querySelector('[data-role="randomizer"]');
+            if (badgeEl) badgeEl.innerHTML = randomizerBadge(currentOrNextWindow(plan, randomizerSettings.stadtwacheDurationMin));
+            const blocksEl = row.querySelector('[data-role="randomizer-blocks"]');
+            if (blocksEl) blocksEl.innerHTML = randomizerBlocksHtml(formatPlanBlocks(plan, randomizerSettings.stadtwacheDurationMin, t));
           })
           .catch(() => {});
       });

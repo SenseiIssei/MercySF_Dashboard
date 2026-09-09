@@ -597,4 +597,6 @@ export default {
   'v2.tooltipHonor': 'Honor',
   'v2.tooltipRank': 'Rank',
   'v2.tooltipMushrooms': 'Mushrooms',
+  'v2.tooltipPlannedToday': 'Planned today',
+  'v2.tooltipStadtwache': 'City watch',
 };

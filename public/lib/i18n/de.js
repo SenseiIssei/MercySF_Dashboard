@@ -611,4 +611,6 @@ export default {
   'v2.tooltipHonor': 'Ehre',
   'v2.tooltipRank': 'Rang',
   'v2.tooltipMushrooms': 'Pilze',
+  'v2.tooltipPlannedToday': 'Heute geplant',
+  'v2.tooltipStadtwache': 'Stadtwache',
 };
