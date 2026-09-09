@@ -22,6 +22,13 @@ services:
       # in the container's writable layer and is lost on `docker compose up --force-recreate` /
       # image rebuilds, even though /opt/mercy and /app/data survive those.
       - mercy_cli_home:/root/.config/mercy-sf
+    # Needed for the "Lokal (dieser Server)" VPN target — wg-quick creates a real WireGuard
+    # interface, which needs NET_ADMIN plus access to the tun device (same requirement as the
+    # node containers, see scripts/lib/dockerNode.js).
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
     restart: unless-stopped
 
   sfapi-bridge:
