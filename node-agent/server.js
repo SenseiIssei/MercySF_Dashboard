@@ -18,12 +18,16 @@ const { requireToken, readBearer } = require('./lib/auth');
 const pairingLib = require('./lib/pairing');
 const cliUpdate = require('./lib/cliUpdate');
 const selfUpdate = require('./lib/selfUpdate');
+const sfapiBridgeUpdate = require('./lib/sfapiBridgeUpdate');
+const sfapiBridgeManager = require('./lib/sfapiBridgeManager');
 const statsDb = require('./lib/statsDb');
 const logBuffer = require('./lib/logBuffer');
 const vpnConfigStore = require('./lib/vpnConfigStore');
 const vpnStore = require('./lib/vpnStore');
 const vpnManager = require('./lib/vpnManager');
 require('./lib/statsCollector');
+
+sfapiBridgeManager.start();
 
 const app = express();
 const PORT = process.env.PORT || process.env.NODE_AGENT_PORT || 8090;
@@ -95,6 +99,23 @@ app.post('/self-update/apply', async (req, res) => {
   try {
     await selfUpdate.applyUpdate();
     res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/sfapi-bridge/status', (req, res) => res.json(sfapiBridgeUpdate.state));
+app.post('/sfapi-bridge/check', async (req, res) => res.json(await sfapiBridgeUpdate.checkForUpdate()));
+app.post('/sfapi-bridge/apply', async (req, res) => {
+  if (sfapiBridgeUpdate.state.applying) return res.status(409).json({ error: 'Update läuft bereits' });
+  const firstInstall = !sfapiBridgeUpdate.state.installed;
+  if (!firstInstall && !sfapiBridgeUpdate.state.updateAvailable) {
+    return res.status(400).json({ error: 'Kein Update verfügbar' });
+  }
+  try {
+    const currentHash = await sfapiBridgeUpdate.applyUpdate();
+    sfapiBridgeManager.start();
+    res.json({ ok: true, currentHash });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -417,6 +438,49 @@ app.get('/profiles/:id/stats/actions', (req, res) => {
   if (!profile.server || !profile.characterName) return res.json([]);
   const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
   res.json(statsDb.getRecentActionWindows(accountIdFor(profile.server, profile.characterName), profile.characterName, limit));
+});
+
+const gamestateCache = new Map();
+const GAMESTATE_CACHE_TTL_MS = 10 * 60 * 1000; // gleicher Default wie panelSettings.js auf dem Dashboard
+
+app.get('/profiles/:id/gamestate', async (req, res) => {
+  const profile = profileStore.get(req.params.id);
+  if (!profile) return res.status(404).json({ error: 'Profil nicht gefunden' });
+  if (!profile.server || !profile.characterName) {
+    return res.status(400).json({ error: 'Noch kein Charakter für dieses Profil bekannt' });
+  }
+  if (!sfapiBridgeManager.isRunning()) {
+    return res.status(503).json({ error: 'sf-api-Bridge auf diesem Node nicht installiert oder nicht gestartet' });
+  }
+
+  const cached = gamestateCache.get(profile.id);
+  if (cached && cached.expiresAt > Date.now()) {
+    return res.json(cached.data);
+  }
+
+  const password = credentialStore.getPassword(profile.id);
+  if (!password) {
+    return res.status(400).json({ error: 'Kein gespeichertes Passwort für dieses Profil auf diesem Node gefunden' });
+  }
+
+  let bridgeRes;
+  try {
+    bridgeRes = await fetch('http://127.0.0.1:4001/state', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: profile.username, password, server: profile.server }),
+    });
+  } catch (err) {
+    return res.status(502).json({ error: 'sf-api-Bridge nicht erreichbar: ' + err.message });
+  }
+
+  const data = await bridgeRes.json();
+  if (!bridgeRes.ok) {
+    return res.status(502).json({ error: data.error || 'sf-api-Bridge-Fehler' });
+  }
+
+  gamestateCache.set(profile.id, { data, expiresAt: Date.now() + GAMESTATE_CACHE_TTL_MS });
+  res.json(data);
 });
 
 // --- Schnellsteuerung für den Fall, dass Bot oder Node sich mal aufgehängt haben ---
