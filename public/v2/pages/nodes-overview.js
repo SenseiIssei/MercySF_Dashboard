@@ -22,6 +22,19 @@ export default {
   mount(container, ctx) {
     ctx.injectStyleOnce('nodes-overview', `
       .v2-node-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+      .v2-stat-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+      .v2-stat-chip {
+        display: flex; align-items: center; gap: 5px; background: var(--panel-2); border: 1px solid var(--border);
+        border-radius: var(--radius-md); padding: 5px 10px; font-size: 12px; color: var(--text);
+      }
+      .v2-stat-chip .v2-stat-icon { font-size: 12px; }
+      .v2-version-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+      .v2-version-pill {
+        display: inline-flex; align-items: center; gap: 4px; font-size: 11px; padding: 3px 9px;
+        border-radius: 20px; border: 1px solid var(--border); color: var(--muted);
+      }
+      .v2-version-pill.warn { color: var(--yellow); border-color: var(--yellow); }
+      .v2-version-pill.ok { color: var(--green); border-color: var(--green); }
     `);
 
     const wrap = document.createElement('div');
@@ -45,8 +58,12 @@ export default {
         return;
       }
 
-      const vpnTargets = await ctx.fetchJSON('/api/vpn/targets').catch(() => []);
+      const [vpnTargets, vpnProfiles] = await Promise.all([
+        ctx.fetchJSON('/api/vpn/targets').catch(() => []),
+        ctx.fetchJSON('/api/vpn/profiles').catch(() => []),
+      ]);
       const vpnByTarget = new Map(vpnTargets.map(vt => [vt.targetId, vt]));
+      const vpnProfileLabels = new Map(vpnProfiles.map(p => [p.id, p.label]));
 
       // De-dup by account id: a backend quirk can list the same character twice (once from the
       // local listing, once from the remote/node listing) when it ran locally and was later
@@ -68,6 +85,10 @@ export default {
       grid.innerHTML = nodes.map(n => {
         const vpn = vpnByTarget.get(n.id);
         const vpnConnected = !!vpn?.lastStatus?.connected;
+        const vpnProfileLabel = vpn?.vpnProfileId ? vpnProfileLabels.get(vpn.vpnProfileId) : null;
+        const vpnBadgeText = vpnConnected
+          ? (vpnProfileLabel ? `${t('v2.vpnActive')}: ${escapeHtml(vpnProfileLabel)}` : t('v2.vpnActive'))
+          : t('v2.vpnInactive');
         const nodeAccounts = accountsByNode.get(n.isLocal ? null : n.id) || [];
         return `
           <div class="v2-card" data-id="${n.id}">
@@ -76,9 +97,10 @@ export default {
                 <span class="v2-dot" data-role="dot"></span>
                 ${escapeHtml(n.name)}
               </div>
-              <span class="v2-badge${vpnConnected ? ' vpn-active' : ''}">${vpnConnected ? t('v2.vpnActive') : t('v2.vpnInactive')}</span>
+              <span class="v2-badge${vpnConnected ? ' vpn-active' : ''}">${vpnBadgeText}</span>
             </div>
-            <div class="v2-metrics" data-role="metrics">${t('v2.loadingUtilization')}</div>
+            <div class="v2-stat-row" data-role="metrics">${t('v2.loadingUtilization')}</div>
+            <div class="v2-version-row" data-role="version"></div>
             <div data-role="accounts">
               ${nodeAccounts.length
                 ? nodeAccounts.map(acc => `
@@ -104,26 +126,34 @@ export default {
           .catch(() => {});
       });
 
-      // System-Stats + Update-Status pro Node, best-effort.
+      // System-Stats + Update-Status pro Node, best-effort — getrennte Zeilen statt einer
+      // einzigen `·`-verketteten Textzeile: Auslastung als kompakte Chips, Versionsstatus als
+      // eigene Pill-Reihe darunter.
       nodes.forEach(n => {
-        const metricsEl = grid.querySelector(`.v2-card[data-id="${n.id}"] [data-role="metrics"]`);
+        const card = grid.querySelector(`.v2-card[data-id="${n.id}"]`);
+        if (!card) return;
+        const metricsEl = card.querySelector('[data-role="metrics"]');
+        const versionEl = card.querySelector('[data-role="version"]');
         Promise.all([
           ctx.fetchJSON(`/api/nodes/${encodeURIComponent(n.id)}/system/stats`).catch(() => null),
           ctx.fetchJSON(`/api/nodes/${encodeURIComponent(n.id)}/cli/status`).catch(() => null),
           ctx.fetchJSON(`/api/nodes/${encodeURIComponent(n.id)}/self-update/status`).catch(() => null),
         ]).then(([stats, cli, agent]) => {
-          const parts = [];
+          if (!metricsEl || !versionEl) return;
           if (stats) {
             const load = (stats.loadAvg && stats.loadAvg[0] != null) ? stats.loadAvg[0].toFixed(2) : '?';
-            parts.push(`🧠 ${t('v2.statsLoad', { load, cores: stats.cpuCount })}`);
-            parts.push(`💾 ${t('v2.statsRam', { percent: stats.memUsedPercent })}`);
-            parts.push(`⏱ ${fmtUptime(stats.uptimeSec)}`);
+            metricsEl.innerHTML = `
+              <span class="v2-stat-chip"><span class="v2-stat-icon">🧠</span>${t('v2.statsLoad', { load, cores: stats.cpuCount })}</span>
+              <span class="v2-stat-chip"><span class="v2-stat-icon">💾</span>${t('v2.statsRam', { percent: stats.memUsedPercent })}</span>
+              <span class="v2-stat-chip"><span class="v2-stat-icon">⏱</span>${escapeHtml(fmtUptime(stats.uptimeSec))}</span>
+            `;
           } else {
-            parts.push(t('v2.statsUnavailable'));
+            metricsEl.innerHTML = `<span class="v2-stat-chip">${t('v2.statsUnavailable')}</span>`;
           }
-          if (cli) parts.push(cli.updateAvailable ? `⚠ ${t('v2.cliUpdateAvailable')}` : `✓ ${t('v2.cliUpToDate')}`);
-          if (agent) parts.push(agent.updateAvailable ? `⚠ ${t('v2.agentUpdateAvailable')}` : `✓ ${t('v2.agentUpToDate')}`);
-          metricsEl.textContent = parts.join(' · ');
+          const pills = [];
+          if (cli) pills.push(`<span class="v2-version-pill ${cli.updateAvailable ? 'warn' : 'ok'}">CLI · ${cli.updateAvailable ? t('v2.cliUpdateAvailable') : t('v2.cliUpToDate')}</span>`);
+          if (agent) pills.push(`<span class="v2-version-pill ${agent.updateAvailable ? 'warn' : 'ok'}">Node-Agent · ${agent.updateAvailable ? t('v2.agentUpdateAvailable') : t('v2.agentUpToDate')}</span>`);
+          versionEl.innerHTML = pills.join('');
         });
       });
     }
