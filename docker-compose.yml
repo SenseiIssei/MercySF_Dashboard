@@ -23,12 +23,11 @@ services:
       # image rebuilds, even though /opt/mercy and /app/data survive those.
       - mercy_cli_home:/root/.config/mercy-sf
     # Needed for the "Lokal (dieser Server)" VPN target — wg-quick creates a real WireGuard
-    # interface, which needs NET_ADMIN plus access to the tun device (same requirement as the
-    # node containers, see scripts/lib/dockerNode.js).
+    # interface via the kernel module (`ip link add type wireguard`), which needs NET_ADMIN.
+    # No /dev/net/tun mapping: that's only for userspace/TUN-based WireGuard, and this host runs
+    # the kernel module (already loaded) — the existing node containers don't map it either.
     cap_add:
       - NET_ADMIN
-    devices:
-      - /dev/net/tun
     restart: unless-stopped
 
   sfapi-bridge:
