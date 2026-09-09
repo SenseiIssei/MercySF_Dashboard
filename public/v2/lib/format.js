@@ -40,6 +40,19 @@ export function statsTooltipRows(acc, t) {
   return rows.length ? rows : [[t('v2.tooltipNoData'), '']];
 }
 
+// Alle für heute geplanten Zeitfenster eines Accounts (Blöcke + Stadtwache-Pulse), sortiert und
+// als "HH:MM–HH:MM"-Strings formatiert — für die vollständige Tagesübersicht im Hover-Tooltip,
+// nicht nur das aktuelle/nächste Fenster wie currentOrNextWindow().
+export function formatPlanBlocks(plan, stadtwacheDurationMin = 5, t = null) {
+  if (!plan) return [];
+  const windows = [
+    ...(plan.blocks || []).map(b => ({ start: b.start, end: b.end })),
+    ...(plan.stadtwache || []).map(s => ({ start: s.at, end: s.at + stadtwacheDurationMin, stadtwache: true })),
+  ].sort((a, b) => a.start - b.start);
+  const stadtwacheLabel = t ? t('v2.tooltipStadtwache') : 'Stadtwache';
+  return windows.map(w => `${fmtMinutesAsTime(w.start)}–${fmtMinutesAsTime(w.end)}${w.stadtwache ? ` (${stadtwacheLabel})` : ''}`);
+}
+
 // Findet aus einem Randomizer-Tagesplan (Blöcke + Stadtwache-Pulse) das gerade laufende Fenster
 // oder, falls keins läuft, das nächste anstehende — für eine kompakte Anzeige pro Account.
 // Rückgabe: { active: bool, start, end } in Minuten, oder null wenn für heute nichts (mehr)
