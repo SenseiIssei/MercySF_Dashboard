@@ -2,6 +2,8 @@ const express = require('express');
 const registry = require('../lib/accountsRegistry');
 const credentialStore = require('../lib/credentialStore');
 const panelSettings = require('../lib/panelSettings');
+const nodeRegistry = require('../lib/nodeRegistry');
+const nodeClient = require('../lib/nodeClient');
 
 const router = express.Router();
 const BRIDGE_URL = 'http://127.0.0.1:4001/state';
@@ -19,6 +21,18 @@ router.get('/:profileId', async (req, res) => {
     return res.json(cached.data);
   }
   const cacheTtlMs = panelSettings.getIntervalMs();
+
+  if (profile.nodeId) {
+    const node = nodeRegistry.get(profile.nodeId);
+    if (!node) return res.status(409).json({ error: 'Der zugewiesene Node existiert nicht mehr' });
+    try {
+      const data = await nodeClient.call(node, `/profiles/${encodeURIComponent(profile.id)}/gamestate`, { timeoutMs: 15000 });
+      cache.set(profile.id, { data, expiresAt: Date.now() + cacheTtlMs });
+      return res.json(data);
+    } catch (err) {
+      return res.status(err.status || 502).json({ error: err.message });
+    }
+  }
 
   const password = credentialStore.getPassword(profile.username);
   if (!password) {
