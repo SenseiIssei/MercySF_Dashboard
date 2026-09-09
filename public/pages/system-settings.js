@@ -84,6 +84,13 @@ export default {
             <span id="panel-settings-status"></span>
           </div>
         </div>
+        <div class="panel-settings-card">
+          <h3>${t('systemSettings.uiVersionTitle')}</h3>
+          <div class="panel-settings-desc">${t('systemSettings.uiVersionDesc')}</div>
+          <div class="panel-settings-row">
+            <button class="btn btn-primary" id="ui-version-switch-btn" style="width:auto;padding:7px 16px;">${t('systemSettings.uiVersionSwitchBtn')}</button>
+          </div>
+        </div>
       </div>
       <div class="settings-tab-panel" data-panel="node" hidden></div>
       <div class="settings-tab-panel" data-panel="vpn" hidden>
@@ -163,6 +170,17 @@ export default {
       } catch (err) {
         status.textContent = t('analytics.loadError', { message: err.message });
       }
+    });
+
+    wrap.querySelector('#ui-version-switch-btn').addEventListener('click', async () => {
+      try {
+        await ctx.fetchJSON('/api/panel-settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uiVersion: 'v2' }),
+        });
+      } catch (e) { /* best-effort — trotzdem weiterleiten */ }
+      location.href = '/v2/';
     });
 
     // --- Statistik ---
