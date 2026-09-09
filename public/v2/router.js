@@ -1,10 +1,14 @@
 import { t } from '/lib/i18n.js';
 
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
 async function fetchJSON(url, opts) {
   const res = await fetch(url, opts);
   if (res.status === 401) {
     location.href = '/login.html';
-    throw new Error('Nicht angemeldet');
+    throw new Error(t('v2.notAuthenticated'));
   }
   if (!res.ok) {
     let msg = res.statusText;
@@ -22,22 +26,47 @@ function injectStyleOnce(id, css) {
   document.head.appendChild(style);
 }
 
-const ctx = { fetchJSON, injectStyleOnce };
+// routeParams wird von renderRoute() vor jedem mount() neu gesetzt (z. B. { nodeId } für die
+// `#/node/<id>`-Route) — Seiten lesen es aus ctx.routeParams statt der Router müsste jedem
+// page-Modul eine eigene Signatur geben.
+const ctx = { fetchJSON, injectStyleOnce, routeParams: {} };
 
 const PAGES = [
   { id: 'nodes-overview', label: 'v2.nodesOverviewLabel', icon: '🖧' },
 ];
 
+// Ein Nav-Link pro bekanntem Node (dynamisch, da die Node-Liste sich ändern kann) — führt zur
+// `node-detail`-Seite mit der jeweiligen Node-Id als Routenparameter.
+let dynamicNodes = [];
+
+async function loadDynamicNav() {
+  try {
+    dynamicNodes = await fetchJSON('/api/nodes');
+  } catch (e) { /* best-effort — Sidebar zeigt dann nur die statischen Einträge */ }
+  renderNav();
+}
+
 let currentUnmount = null;
 
+function parseRoute(hash) {
+  const clean = hash.replace(/^#\/?/, '') || 'nodes-overview';
+  const nodeMatch = clean.match(/^node\/(.+)$/);
+  if (nodeMatch) return { pageId: 'node-detail', params: { nodeId: decodeURIComponent(nodeMatch[1]) } };
+  return { pageId: PAGES.some(p => p.id === clean) ? clean : 'nodes-overview', params: {} };
+}
+
 async function renderRoute() {
-  const hash = location.hash.replace(/^#\/?/, '') || 'nodes-overview';
-  const pageMeta = PAGES.find(p => p.id === hash) || PAGES[0];
+  const { pageId, params } = parseRoute(location.hash);
+  ctx.routeParams = params;
 
   document.querySelectorAll('#v2-nav a').forEach(el => {
-    el.classList.toggle('active', el.dataset.page === pageMeta.id);
+    el.classList.toggle('active', el.dataset.route === (params.nodeId ? `node/${params.nodeId}` : pageId));
   });
-  document.getElementById('v2-page-title').textContent = t(pageMeta.label);
+
+  const node = params.nodeId ? dynamicNodes.find(n => n.id === params.nodeId) : null;
+  document.getElementById('v2-page-title').textContent = node
+    ? node.name
+    : t((PAGES.find(p => p.id === pageId) || PAGES[0]).label);
 
   const root = document.getElementById('v2-page-root');
   if (typeof currentUnmount === 'function') {
@@ -47,20 +76,29 @@ async function renderRoute() {
   root.innerHTML = '';
 
   try {
-    const mod = await import(`/v2/pages/${pageMeta.id}.js`);
+    const mod = await import(`/v2/pages/${pageId}.js`);
     const page = mod.default;
     const result = page.mount(root, ctx);
     if (typeof result === 'function') currentUnmount = result;
   } catch (err) {
-    root.innerHTML = `<div class="v2-card"><p>${t('v2.pageLoadError', { page: pageMeta.id, message: err.message })}</p></div>`;
+    root.innerHTML = `<div class="v2-card"><p>${t('v2.pageLoadError', { page: pageId, message: err.message })}</p></div>`;
   }
 }
 
 function renderNav() {
   const nav = document.getElementById('v2-nav');
-  nav.innerHTML = PAGES.map(p =>
-    `<a data-page="${p.id}" href="#/${p.id}"><span>${p.icon}</span> ${t(p.label)}</a>`
+  const staticLinks = PAGES.map(p =>
+    `<a data-route="${p.id}" href="#/${p.id}"><span>${p.icon}</span> ${t(p.label)}</a>`
   ).join('');
+  const nodeLinks = dynamicNodes.map(n =>
+    `<a data-route="node/${n.id}" href="#/node/${encodeURIComponent(n.id)}" class="v2-nav-node"><span>${n.isLocal ? '💻' : '🖥'}</span> ${escapeHtml(n.name)}</a>`
+  ).join('');
+  nav.innerHTML = staticLinks + (dynamicNodes.length ? '<hr class="v2-nav-divider" />' + nodeLinks : '');
+
+  const { pageId, params } = parseRoute(location.hash);
+  nav.querySelectorAll('a').forEach(el => {
+    el.classList.toggle('active', el.dataset.route === (params.nodeId ? `node/${params.nodeId}` : pageId));
+  });
 }
 
 function initThemeToggle() {
@@ -82,7 +120,9 @@ function initLogout() {
   const btn = document.getElementById('v2-logout-btn');
   if (!btn) return;
   btn.addEventListener('click', async () => {
-    await fetchJSON('/api/auth/logout', { method: 'POST' });
+    try {
+      await fetchJSON('/api/auth/logout', { method: 'POST' });
+    } catch (e) { /* Session ist ohnehin ungültig/serverseitig weg — trotzdem weiterleiten */ }
     location.href = '/login.html';
   });
 }
@@ -107,5 +147,5 @@ window.addEventListener('hashchange', renderRoute);
 initThemeToggle();
 initLogout();
 initSwitchLink();
-renderNav();
-renderRoute();
+loadDynamicNav().then(renderRoute);
+setInterval(loadDynamicNav, 30000);

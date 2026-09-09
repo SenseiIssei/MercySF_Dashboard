@@ -1,18 +1,17 @@
 import { t } from '/lib/i18n.js';
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-}
-
-function fmtUptime(sec) {
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  return h ? `${h}h ${m}m` : `${m}m`;
-}
+import { escapeHtml, fmtUptime, fmtMinutesAsTime, currentOrNextWindow } from '/v2/lib/format.js';
 
 function accountStatusLabel(acc) {
+  if (acc.paused) return t('v2.accountPaused');
   if (acc.running) return acc.currentActivity ? acc.currentActivity : t('v2.accountRunning');
   return t('v2.accountStopped');
+}
+
+function randomizerBadge(window) {
+  if (!window) return '';
+  const time = fmtMinutesAsTime(window.active ? window.end : window.start);
+  const key = window.active ? 'v2.randomizerActiveUntil' : 'v2.randomizerNextAt';
+  return `<span class="v2-randomizer-badge${window.active ? ' active' : ''}">🎲 ${t(key, { time })}</span>`;
 }
 
 export default {
@@ -21,7 +20,9 @@ export default {
   icon: '🖧',
   mount(container, ctx) {
     ctx.injectStyleOnce('nodes-overview', `
-      .v2-node-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+      .v2-node-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
+      .v2-card-title { cursor: pointer; }
+      .v2-card-title:hover { color: var(--accent); }
       .v2-stat-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
       .v2-stat-chip {
         display: flex; align-items: center; gap: 5px; background: var(--panel-2); border: 1px solid var(--border);
@@ -35,6 +36,17 @@ export default {
       }
       .v2-version-pill.warn { color: var(--yellow); border-color: var(--yellow); }
       .v2-version-pill.ok { color: var(--green); border-color: var(--green); }
+      .v2-account-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .v2-account-activity { color: var(--muted); font-size: 12px; margin-left: auto; }
+      .v2-randomizer-badge { font-size: 10.5px; color: var(--muted); border: 1px solid var(--border); border-radius: 20px; padding: 1px 8px; }
+      .v2-randomizer-badge.active { color: var(--green); border-color: var(--green); }
+      .v2-account-actions { display: flex; gap: 3px; }
+      .v2-account-actions button {
+        width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel-2);
+        color: var(--text); cursor: pointer; font-size: 10px; line-height: 1; padding: 0;
+      }
+      .v2-account-actions button:hover { background: var(--panel); border-color: var(--accent); }
+      .v2-account-actions button:disabled { opacity: 0.4; cursor: default; }
     `);
 
     const wrap = document.createElement('div');
@@ -58,9 +70,11 @@ export default {
         return;
       }
 
-      const [vpnTargets, vpnProfiles] = await Promise.all([
+      const [vpnTargets, vpnProfiles, randomizerConfigs, randomizerSettings] = await Promise.all([
         ctx.fetchJSON('/api/vpn/targets').catch(() => []),
         ctx.fetchJSON('/api/vpn/profiles').catch(() => []),
+        ctx.fetchJSON('/api/randomizer/configs').catch(() => ({})),
+        ctx.fetchJSON('/api/randomizer/settings').catch(() => ({})),
       ]);
       const vpnByTarget = new Map(vpnTargets.map(vt => [vt.targetId, vt]));
       const vpnProfileLabels = new Map(vpnProfiles.map(p => [p.id, p.label]));
@@ -93,7 +107,7 @@ export default {
         return `
           <div class="v2-card" data-id="${n.id}">
             <div class="v2-card-header">
-              <div class="v2-card-title">
+              <div class="v2-card-title" data-action="open-detail">
                 <span class="v2-dot" data-role="dot"></span>
                 ${escapeHtml(n.name)}
               </div>
@@ -104,10 +118,16 @@ export default {
             <div data-role="accounts">
               ${nodeAccounts.length
                 ? nodeAccounts.map(acc => `
-                  <div class="v2-account-row">
+                  <div class="v2-account-row" data-profile-id="${escapeHtml(acc.profileId || '')}" data-username="${escapeHtml(acc.username || '')}">
                     <span class="v2-dot ${acc.running ? 'online' : 'offline'}"></span>
                     <span class="char-name">${escapeHtml(acc.charName)}</span>
+                    <span data-role="randomizer"></span>
                     <span class="v2-account-activity">${escapeHtml(accountStatusLabel(acc))}</span>
+                    <span class="v2-account-actions">
+                      <button data-action="start" title="${t('v2.actionStart')}" ${acc.running ? 'disabled' : ''}>▶</button>
+                      <button data-action="pause" title="${t('v2.actionPause')}" ${(!acc.running || acc.paused) ? 'disabled' : ''}>⏸</button>
+                      <button data-action="stop" title="${t('v2.actionStop')}" ${!acc.running ? 'disabled' : ''}>■</button>
+                    </span>
                   </div>
                 `).join('')
                 : `<div class="v2-empty">${t('v2.noAccountsOnNode')}</div>`}
@@ -115,6 +135,35 @@ export default {
           </div>
         `;
       }).join('');
+
+      // Node-Titel öffnet die Detailseite für diesen Node.
+      grid.querySelectorAll('[data-action="open-detail"]').forEach(el => {
+        el.addEventListener('click', () => {
+          const id = el.closest('.v2-card').dataset.id;
+          location.hash = `#/node/${encodeURIComponent(id)}`;
+        });
+      });
+
+      // Start/Pause/Stop pro Account — nutzt die bestehenden Profil-Endpunkte, die bereits für
+      // Node-Accounts (per nodeId) delegieren, siehe routes/profiles.js.
+      grid.querySelectorAll('.v2-account-row').forEach(row => {
+        const profileId = row.dataset.profileId;
+        if (!profileId) return;
+        row.querySelectorAll('.v2-account-actions button').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const action = btn.dataset.action;
+            const endpoint = action === 'pause' ? 'pause' : action === 'stop' ? 'stop' : 'start';
+            row.querySelectorAll('button').forEach(b => { b.disabled = true; });
+            try {
+              await ctx.fetchJSON(`/api/profiles/${encodeURIComponent(profileId)}/${endpoint}`, { method: 'POST' });
+              await load();
+            } catch (err) {
+              alert(t('v2.actionFailed', { message: err.message }));
+              row.querySelectorAll('button').forEach(b => { b.disabled = false; });
+            }
+          });
+        });
+      });
 
       // Live-Ping pro Node-Karte, unabhängig vom restlichen Rendering.
       nodes.forEach(n => {
@@ -155,6 +204,20 @@ export default {
           if (agent) pills.push(`<span class="v2-version-pill ${agent.updateAvailable ? 'warn' : 'ok'}">Node-Agent · ${agent.updateAvailable ? t('v2.agentUpdateAvailable') : t('v2.agentUpToDate')}</span>`);
           versionEl.innerHTML = pills.join('');
         });
+      });
+
+      // Randomizer-Fenster pro Account, nur für Accounts mit aktiviertem Randomizer (vermeidet
+      // unnötige Plan-Abfragen für alle anderen).
+      dedupedAccounts.forEach(acc => {
+        if (!acc.username || !randomizerConfigs[acc.username]?.enabled) return;
+        ctx.fetchJSON(`/api/randomizer/plan/${encodeURIComponent(acc.username)}`)
+          .then(({ plan }) => {
+            const el = grid.querySelector(`.v2-account-row[data-username="${CSS.escape(acc.username)}"] [data-role="randomizer"]`);
+            if (!el) return;
+            const window = currentOrNextWindow(plan, randomizerSettings.stadtwacheDurationMin);
+            el.innerHTML = randomizerBadge(window);
+          })
+          .catch(() => {});
       });
     }
 
