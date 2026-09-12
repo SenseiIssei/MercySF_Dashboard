@@ -85,6 +85,15 @@ export default {
           </div>
         </div>
         <div class="panel-settings-card">
+          <h3>${t('systemSettings.statsRetentionTitle')}</h3>
+          <div class="panel-settings-desc">${t('systemSettings.statsRetentionDesc')}</div>
+          <div class="panel-settings-row">
+            <select id="stats-retention-select"><option>${t('common.loading')}</option></select>
+            <button class="btn btn-primary" id="stats-retention-save" style="width:auto;padding:7px 16px;">${t('systemSettings.applyBtn')}</button>
+            <span id="stats-retention-status"></span>
+          </div>
+        </div>
+        <div class="panel-settings-card">
           <h3>${t('systemSettings.uiVersionTitle')}</h3>
           <div class="panel-settings-desc">${t('systemSettings.uiVersionDesc')}</div>
           <div class="panel-settings-row">
@@ -146,13 +155,20 @@ export default {
     const nodeUnmount = nodesPage.mount(wrap.querySelector('[data-panel="node"]'), ctx);
 
     // --- Panel-Einstellungen ---
+    function retentionOptionLabel(days) {
+      return days === 90 ? t('systemSettings.statsRetention3Months') : t('systemSettings.statsRetentionDays', { days });
+    }
+
     async function loadPanelSettings() {
       const select = wrap.querySelector('#gamestate-interval-select');
       const status = wrap.querySelector('#panel-settings-status');
+      const retentionSelect = wrap.querySelector('#stats-retention-select');
       try {
         const data = await ctx.fetchJSON('/api/panel-settings');
         select.innerHTML = data.presets.map(p =>
           `<option value="${p.key}" ${p.key === data.current ? 'selected' : ''}>${p.label}</option>`).join('');
+        retentionSelect.innerHTML = data.statsRetentionOptions.map(days =>
+          `<option value="${days}" ${days === data.statsRetentionDays ? 'selected' : ''}>${retentionOptionLabel(days)}</option>`).join('');
       } catch (err) {
         status.textContent = t('analytics.loadError', { message: err.message });
       }
@@ -167,6 +183,22 @@ export default {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ preset: select.value }),
+        });
+        status.textContent = t('systemSettings.applied');
+      } catch (err) {
+        status.textContent = t('analytics.loadError', { message: err.message });
+      }
+    });
+
+    wrap.querySelector('#stats-retention-save').addEventListener('click', async () => {
+      const select = wrap.querySelector('#stats-retention-select');
+      const status = wrap.querySelector('#stats-retention-status');
+      status.textContent = t('systemSettings.saving');
+      try {
+        await ctx.fetchJSON('/api/panel-settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ statsRetentionDays: Number(select.value) }),
         });
         status.textContent = t('systemSettings.applied');
       } catch (err) {

@@ -5,6 +5,16 @@ Changelog](https://keepachangelog.com/). History before 2.0.0 lives in
 `git log` — this file starts tracking from the "Version 2" design
 overhaul.
 
+## [2.16.0] - 2026-09-12
+
+### Added
+- A configurable retention period (7/14/28/90 days) for statistics data (`stats.db`'s level/
+  silver/honor snapshots and the action log), under System-Einstellungen → General. Previously
+  both tables grew unbounded forever. Changing the setting prunes immediately and pushes the new
+  value to every paired node (each node prunes its own local `stats.db` independently, including
+  while disconnected from the dashboard using the last value it received), plus a daily
+  background cleanup on both the dashboard and every node going forward.
+
 ## [2.15.2] - 2026-09-12
 
 ### Added

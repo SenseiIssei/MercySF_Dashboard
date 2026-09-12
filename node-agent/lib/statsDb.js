@@ -141,4 +141,13 @@ function getRecentActionWindows(accountId, charName, limit) {
   return windows.slice(-limit).reverse();
 }
 
-module.exports = { insertSnapshot, insertAction, getDailyStats, getRecentActionWindows };
+// Identische Ergänzung zu MercySF_Dashboard/lib/statsDb.js — löscht Snapshots/Aktionen älter als
+// `days` Tage, damit die lokale stats.db des Node-Agents nicht unbegrenzt wächst.
+function pruneOlderThan(days) {
+  const cutoff = `-${days} days`;
+  const deletedSnapshots = db.prepare(`DELETE FROM snapshots WHERE timestamp < datetime('now', ?)`).run(cutoff).changes;
+  const deletedActions = db.prepare(`DELETE FROM actions WHERE timestamp < datetime('now', ?)`).run(cutoff).changes;
+  return { deletedSnapshots, deletedActions };
+}
+
+module.exports = { insertSnapshot, insertAction, getDailyStats, getRecentActionWindows, pruneOlderThan };
