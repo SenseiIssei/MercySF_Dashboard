@@ -21,6 +21,7 @@ const selfUpdate = require('./lib/selfUpdate');
 const sfapiBridgeUpdate = require('./lib/sfapiBridgeUpdate');
 const sfapiBridgeManager = require('./lib/sfapiBridgeManager');
 const statsDb = require('./lib/statsDb');
+const statsRetention = require('./lib/statsRetention');
 const logBuffer = require('./lib/logBuffer');
 const vpnConfigStore = require('./lib/vpnConfigStore');
 const vpnStore = require('./lib/vpnStore');
@@ -101,6 +102,17 @@ app.post('/self-update/apply', async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/stats-retention', (req, res) => res.json({ days: statsRetention.getDays() }));
+app.post('/stats-retention', (req, res) => {
+  try {
+    const days = statsRetention.setDays(Number(req.body?.days));
+    const pruned = statsDb.pruneOlderThan(days);
+    res.json({ ok: true, days, pruned });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
 });
 
