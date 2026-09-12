@@ -53,18 +53,6 @@ export default {
       .v2-detail-table tr:last-child td { border-bottom: none; }
       .v2-update-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
       .v2-update-row .label { width: 100px; color: var(--muted); font-size: 12.5px; }
-      .v2-char-tooltip-wrap { position: relative; }
-      .v2-char-tooltip {
-        display: none; position: absolute; bottom: 100%; left: 0; margin-bottom: 6px; min-width: 160px;
-        background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-md);
-        padding: 8px 10px; font-size: 11.5px; box-shadow: 0 6px 18px rgba(0,0,0,0.35); z-index: 20;
-      }
-      .v2-char-tooltip-wrap:hover .v2-char-tooltip { display: block; }
-      .v2-char-tooltip-row { display: flex; justify-content: space-between; gap: 14px; padding: 1px 0; }
-      .v2-char-tooltip-row span:first-child { color: var(--muted); }
-      .v2-char-tooltip-blocks { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); }
-      .v2-char-tooltip-blocks:empty { display: none; }
-      .v2-char-tooltip-blocks-title { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 3px; }
     `);
 
     const nodeId = ctx.routeParams?.nodeId;
@@ -171,6 +159,11 @@ export default {
       wrap.querySelectorAll('tr[data-profile-id]').forEach(row => {
         const profileId = row.dataset.profileId;
         if (!profileId) return;
+        const nameEl = row.querySelector('.char-name');
+        if (nameEl) {
+          nameEl.style.cursor = 'pointer';
+          nameEl.addEventListener('click', () => { location.hash = `#/char/${encodeURIComponent(profileId)}`; });
+        }
         row.querySelectorAll('.v2-account-actions button').forEach(btn => {
           btn.addEventListener('click', async () => {
             const action = btn.dataset.action;

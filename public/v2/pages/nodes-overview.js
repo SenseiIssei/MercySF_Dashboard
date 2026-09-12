@@ -65,11 +65,6 @@ export default {
       .v2-account-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
       .v2-card-title { cursor: pointer; }
       .v2-card-title:hover { color: var(--accent); }
-      .v2-stat-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
-      .v2-stat-chip {
-        display: flex; align-items: center; gap: 5px; background: var(--panel-2); border: 1px solid var(--border);
-        border-radius: var(--radius-md); padding: 5px 10px; font-size: 12px; color: var(--text);
-      }
       .v2-stat-chip .v2-stat-icon { font-size: 12px; }
       .v2-version-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
       .v2-version-pill {
@@ -80,27 +75,6 @@ export default {
       .v2-version-pill.ok { color: var(--green); border-color: var(--green); }
       .v2-account-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
       .v2-account-activity { color: var(--muted); font-size: 12px; margin-left: auto; }
-      .v2-randomizer-badge { font-size: 10.5px; color: var(--muted); border: 1px solid var(--border); border-radius: 20px; padding: 1px 8px; }
-      .v2-randomizer-badge.active { color: var(--green); border-color: var(--green); }
-      .v2-account-actions { display: flex; gap: 3px; }
-      .v2-account-actions button {
-        width: 22px; height: 22px; border-radius: 6px; border: 1px solid var(--border); background: var(--panel-2);
-        color: var(--text); cursor: pointer; font-size: 10px; line-height: 1; padding: 0;
-      }
-      .v2-account-actions button:hover { background: var(--panel); border-color: var(--accent); }
-      .v2-account-actions button:disabled { opacity: 0.4; cursor: default; }
-      .v2-char-tooltip-wrap { position: relative; }
-      .v2-char-tooltip {
-        display: none; position: absolute; bottom: 100%; left: 0; margin-bottom: 6px; min-width: 160px;
-        background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius-md);
-        padding: 8px 10px; font-size: 11.5px; box-shadow: 0 6px 18px rgba(0,0,0,0.35); z-index: 20;
-      }
-      .v2-char-tooltip-wrap:hover .v2-char-tooltip { display: block; }
-      .v2-char-tooltip-row { display: flex; justify-content: space-between; gap: 14px; padding: 1px 0; }
-      .v2-char-tooltip-row span:first-child { color: var(--muted); }
-      .v2-char-tooltip-blocks { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); }
-      .v2-char-tooltip-blocks:empty { display: none; }
-      .v2-char-tooltip-blocks-title { font-size: 10.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 3px; }
       .v2-account-node-badge { font-size: 10.5px; color: var(--accent); cursor: pointer; }
       .v2-account-node-badge:hover { text-decoration: underline; }
     `);
@@ -296,6 +270,11 @@ export default {
       grid.querySelectorAll('.v2-account-row').forEach(row => {
         const profileId = row.dataset.profileId;
         if (!profileId) return;
+        const nameEl = row.querySelector('.char-name');
+        if (nameEl) {
+          nameEl.style.cursor = 'pointer';
+          nameEl.addEventListener('click', () => { location.hash = `#/char/${encodeURIComponent(profileId)}`; });
+        }
         row.querySelectorAll('.v2-account-actions button').forEach(btn => {
           btn.addEventListener('click', async () => {
             const action = btn.dataset.action;
