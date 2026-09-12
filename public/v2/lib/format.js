@@ -2,6 +2,26 @@ export function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
+export function fmt(n) {
+  if (n === undefined || n === null) return '—';
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K';
+  return String(n);
+}
+
+// CLI/API liefern den Geldwert in Silber, im Spiel wird aber in Gold gerechnet (100 Silber = 1 Gold).
+export function toGold(silver) {
+  if (silver === undefined || silver === null) return null;
+  return Math.round(silver / 100);
+}
+
+export function fmtDuration(sec, t) {
+  if (!sec) return t('overview.zeroMin');
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  return h ? t('overview.durationHM', { h, m }) : t('overview.durationM', { m });
+}
+
 export function fmtUptime(sec) {
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);

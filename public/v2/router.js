@@ -52,6 +52,8 @@ function parseRoute(hash) {
   const clean = hash.replace(/^#\/?/, '') || 'nodes-overview';
   const nodeMatch = clean.match(/^node\/(.+)$/);
   if (nodeMatch) return { pageId: 'node-detail', params: { nodeId: decodeURIComponent(nodeMatch[1]) } };
+  const charMatch = clean.match(/^char\/(.+)$/);
+  if (charMatch) return { pageId: 'char-detail', params: { profileId: decodeURIComponent(charMatch[1]) } };
   return { pageId: PAGES.some(p => p.id === clean) ? clean : 'nodes-overview', params: {} };
 }
 
@@ -64,9 +66,13 @@ async function renderRoute() {
   });
 
   const node = params.nodeId ? dynamicNodes.find(n => n.id === params.nodeId) : null;
-  document.getElementById('v2-page-title').textContent = node
-    ? node.name
-    : t((PAGES.find(p => p.id === pageId) || PAGES[0]).label);
+  if (node) {
+    document.getElementById('v2-page-title').textContent = node.name;
+  } else if (!params.profileId) {
+    // char-detail setzt seinen eigenen Titel (Charaktername), sobald der Account geladen ist —
+    // hier nur die statischen PAGES-Einträge behandeln.
+    document.getElementById('v2-page-title').textContent = t((PAGES.find(p => p.id === pageId) || PAGES[0]).label);
+  }
 
   const root = document.getElementById('v2-page-root');
   if (typeof currentUnmount === 'function') {

@@ -613,4 +613,6 @@ export default {
   'v2.tooltipMushrooms': 'Pilze',
   'v2.tooltipPlannedToday': 'Heute geplant',
   'v2.tooltipStadtwache': 'Stadtwache',
+  'v2.charDetailLabel': 'Charakter-Details',
+  'v2.noCharSelected': 'Charakter nicht gefunden.',
 };

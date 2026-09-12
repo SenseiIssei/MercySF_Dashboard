@@ -599,4 +599,6 @@ export default {
   'v2.tooltipMushrooms': 'Mushrooms',
   'v2.tooltipPlannedToday': 'Planned today',
   'v2.tooltipStadtwache': 'City watch',
+  'v2.charDetailLabel': 'Character Details',
+  'v2.noCharSelected': 'Character not found.',
 };
