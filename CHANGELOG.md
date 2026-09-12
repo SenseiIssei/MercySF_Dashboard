@@ -5,6 +5,13 @@ Changelog](https://keepachangelog.com/). History before 2.0.0 lives in
 `git log` — this file starts tracking from the "Version 2" design
 overhaul.
 
+## [2.15.2] - 2026-09-12
+
+### Added
+- New v2 UI page: clicking a character name (in the Node-Übersicht or a node's detail page)
+  opens a dedicated character page with Ausrüstung/Gilde/Taverne/Post as tabs, plus that
+  character's stats, randomizer schedule, and Start/Pause/Stop controls.
+
 ## [2.15.1] - 2026-09-09
 
 ### Fixed
