@@ -126,6 +126,16 @@ export default {
           </div>
           <div data-body class="muted">${t('views.loading')}</div>
         </section>
+        <section class="card collapsible-card" id="view-class_world">
+          <div class="card-header">
+            <span>${t('views.classWorldTitle')}</span>
+            <span class="card-header-right">
+              <span class="muted" data-badge></span>
+              <button class="icon-btn" data-refresh="class_world" title="${t('views.refreshTitle')}">⟳</button>
+            </span>
+          </div>
+          <div data-body class="muted">${t('views.loading')}</div>
+        </section>
       </div>
       <section class="card collapsible-card accounts-card" id="accounts-card">
         <div class="card-header">
@@ -696,6 +706,38 @@ export default {
           [t('views.segment'), d.current_segment || '—'],
           [t('views.autoUpgrade'), d.auto_upgrade_enabled ? t('views.yes') : t('views.no')],
         ],
+      },
+      // Die vier Klassen-Verliese und das Portal. Die Reihenfolge ist die des
+      // Servers, und die Namen kommen aus der CLI, die sie aus der
+      // Verliestabelle des Spiels hat. Hier wird nichts umsortiert: eine
+      // Oberflaeche, die eine andere Reihenfolge behauptet als der Bot
+      // benutzt, ist schlimmer als gar keine.
+      class_world: {
+        badge: d => t('views.classWorldBadge', {
+          done: (d.stages || []).filter(s => s.status === 'finished').length,
+          total: (d.stages || []).length,
+        }),
+        rows: d => (d.stages || []).map((stufe, i) => {
+          const name = stufe.name === 'Portal'
+            ? t('views.classPortal')
+            : t({
+                Warrior: 'views.classWarrior',
+                Mage: 'views.classMage',
+                Scout: 'views.classScout',
+                Necromancer: 'views.classNecromancer',
+              }[stufe.name] || 'views.classPortal');
+          let wert;
+          if (stufe.status === 'finished') wert = t('views.stageFinished');
+          else if (stufe.status === 'locked') wert = t('views.stageLocked');
+          else wert = t('views.stageOpen', { done: stufe.finished ?? 0, of: stufe.of ?? 10 });
+          if (stufe.enemy) {
+            wert += ' · ' + t('views.nextEnemy', {
+              name: String(stufe.enemy.name || '').replace(/_/g, ' '),
+              level: stufe.enemy.level ?? '?',
+            });
+          }
+          return [name, wert];
+        }),
       },
     };
 

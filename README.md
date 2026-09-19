@@ -5,8 +5,9 @@
 A browser interface for [Mercy SF](https://mercysf.app). It runs the official
 `mercy-cli` for you, one process per character, and shows what each of them is
 doing: level, gold, mushrooms, the arena and dungeon counters, the legendary
-dungeon, the hellevator, the world boss, which events are running, and whether
-the learned fight models have arrived.
+dungeon, the hellevator, the world boss, the four class dungeons of the Class
+World, which events are running, and whether the learned fight models have
+arrived.
 
 It changes nothing about the bot. Everything goes through the CLI, and the
 equipment, guild, tavern and mail panels come from the game through
