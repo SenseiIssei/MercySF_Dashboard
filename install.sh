@@ -600,10 +600,23 @@ progress "Setting up the sf-api bridge (equipment lookups, localhost only)"
 # source stays as the fallback, and that is when Rust gets installed.
 if [[ -x "$SFAPI_BRIDGE_PATH" ]]; then
   ok "sf-api bridge already installed"
-elif curl -fsSL -o "$SFAPI_BRIDGE_PATH" "$SFAPI_BRIDGE_DOWNLOAD_URL"; then
-  chmod +x "$SFAPI_BRIDGE_PATH"
+elif curl -fsSL -o "$SFAPI_BRIDGE_PATH" "$SFAPI_BRIDGE_DOWNLOAD_URL"   && chmod +x "$SFAPI_BRIDGE_PATH"   && ! ldd "$SFAPI_BRIDGE_PATH" 2>&1 | grep -q "not found"; then
+  # Heruntergeladen UND einmal gestartet.
+  #
+  # Ein Download, der ankommt, ist noch kein Programm, das laeuft. Die
+  # Binaerdatei war einmal auf einem neueren System gebaut und verlangte
+  # GLIBC 2.38; Debian 12, das diese Anleitung empfiehlt, hat 2.36. Sie kam
+  # heil an, der Dienst startete, und systemd probierte es fuenfundsechzig Mal
+  # hintereinander, waehrend die Installation "erfolgreich" meldete. Die Panels
+  # fuer Ausruestung, Gilde, Taverne und Post blieben leer, ohne dass irgendwo
+  # stand, warum.
+  #
+  # `ldd` sagt es, ohne das Programm zu starten: fehlt eine Bibliothek oder
+  # eine Version davon, steht "not found" in seiner Ausgabe. Ein echter Start
+  # waere hier falsch, die Bruecke ist ein Server und kennt kein --help.
   ok "sf-api bridge downloaded"
 else
+  rm -f "$SFAPI_BRIDGE_PATH"
   warn "No prebuilt bridge for this machine — building it from source, which takes a few minutes"
   if ! command -v cargo >/dev/null 2>&1; then
     run_step "Installing Rust/Cargo (needed to build the bridge)" bash -c "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
