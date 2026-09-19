@@ -1,4 +1,5 @@
 import { t } from '/lib/i18n.js';
+import { pollWhileVisible } from '/lib/poll.js';
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -427,7 +428,7 @@ export default {
     });
 
     loadNodes();
-    const interval = setInterval(loadNodes, 15000);
-    return () => clearInterval(interval);
+    const stopPoll = pollWhileVisible(loadNodes, 15000);
+    return () => stopPoll();
   }
 };

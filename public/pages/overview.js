@@ -1,4 +1,5 @@
 import { t, getLanguage } from '/lib/i18n.js';
+import { pollWhileVisible } from '/lib/poll.js';
 
 function fmt(n) {
   if (n === undefined || n === null) return '—';
@@ -889,7 +890,7 @@ export default {
       renderScoutedPlayers(getCurrentProfileId());
     });
     const unsub = ctx.onAccountChange(render);
-    const interval = setInterval(render, 5000);
+    const stopPoll = pollWhileVisible(render, 5000);
 
     renderSlowCards();
     const unsubSlowCards = ctx.onAccountChange(() => renderSlowCards());
@@ -933,7 +934,7 @@ export default {
     return () => {
       unsub(); unsubGameState(); unsubBattleHistory(); unsubRecentActions(); unsubScoutedPlayers();
       unsubSlowCards();
-      clearInterval(interval);
+      stopPoll();
     };
   }
 };

@@ -1,5 +1,6 @@
 import { connectTerminal } from '/lib/terminal.js';
 import { t } from '/lib/i18n.js';
+import { pollWhileVisible } from '/lib/poll.js';
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -860,13 +861,13 @@ export default {
     });
 
     loadProfiles();
-    const interval = setInterval(() => {
+    const stopPoll = pollWhileVisible(() => {
       // Nur Status aktualisieren, keine offenen Terminals stören
       if (openTerminals.size === 0) loadProfiles();
     }, 5000);
 
     return () => {
-      clearInterval(interval);
+      stopPoll();
       closeTerminalModal();
       openTerminals.forEach(t => t.handle.dispose());
       document.removeEventListener('click', closeMenusOnOutsideClick);

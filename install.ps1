@@ -4,7 +4,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$RepoUrl = "https://github.com/dandulox/MercySF_Dashboard.git"
+$RepoUrl = "https://github.com/SenseiIssei/MercySF_Dashboard.git"
 $InstallDir = Join-Path $env:LOCALAPPDATA "Mercy\dashboard"
 $DashboardUrl = "https://localhost:8080"
 

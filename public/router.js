@@ -1,4 +1,5 @@
 import { t, getLanguage, setLanguageAuthenticated, onLanguageChange, LANGUAGES } from '/lib/i18n.js';
+import { pollWhileVisible } from '/lib/poll.js';
 
 const state = {
   accountId: null,
@@ -515,7 +516,7 @@ function initNotifications() {
     if (dropdown && !dropdown.contains(ev.target)) panel.hidden = true;
   });
   pollNotifications();
-  setInterval(pollNotifications, 5000);
+  pollWhileVisible(pollNotifications, 5000);
 }
 
 function initAnonMode() {
@@ -801,7 +802,13 @@ loadRandomizerStatus();
 loadCliUpdateStatus();
 loadDashboardUpdateStatus();
 loadAccounts().then(renderRoute);
-setInterval(() => {
+// Der Takt der Kopfzeile und der Seitenleiste ruht, solange niemand hinschaut.
+//
+// Fünf Aufrufe alle fünf Sekunden, dazu die der offenen Seite: das lief auch
+// dann weiter, wenn der Tab im Hintergrund lag oder das Telefon in der Tasche
+// steckte. Auf einem schwachen Gerät ist das der Unterschied zwischen "läuft
+// nebenbei" und "der Lüfter geht an".
+pollWhileVisible(() => {
   loadStatus();
   loadRandomizerStatus();
   loadCliUpdateStatus();

@@ -1,5 +1,6 @@
 import { t } from '/lib/i18n.js';
 import nodesPage from './nodes.js';
+import { pollWhileVisible } from '/lib/poll.js';
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -277,7 +278,7 @@ export default {
       }
     }
 
-    const telemetryRefreshTimer = setInterval(loadTelemetrySettings, 30000);
+    const stopTelemetryPoll = pollWhileVisible(loadTelemetrySettings, 30000);
 
     wrap.querySelector('#telemetry-enabled-checkbox').addEventListener('change', async (e) => {
       const status = wrap.querySelector('#telemetry-status');
@@ -493,7 +494,7 @@ export default {
     loadTelemetrySettings();
 
     return () => {
-      clearInterval(telemetryRefreshTimer);
+      stopTelemetryPoll();
       if (typeof nodeUnmount === 'function') nodeUnmount();
     };
   },

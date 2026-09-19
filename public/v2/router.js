@@ -1,4 +1,5 @@
 import { t } from '/lib/i18n.js';
+import { pollWhileVisible } from '/lib/poll.js';
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -148,4 +149,4 @@ initThemeToggle();
 initLogout();
 initSwitchLink();
 loadDynamicNav().then(renderRoute);
-setInterval(loadDynamicNav, 30000);
+pollWhileVisible(loadDynamicNav, 30000);
