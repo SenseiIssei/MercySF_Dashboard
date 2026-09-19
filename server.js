@@ -26,21 +26,16 @@ const PORT = process.env.PORT || 8080;
 // eine Firewall-Regel anfassen, die danach jemand wieder vergisst.
 const HOST = process.env.HOST || '0.0.0.0';
 
-const PUBLIC_PAGE_PATHS = new Set(['/setup.html', '/login.html', '/setup.js', '/login.js']);
-// Shared static assets (i18n dictionaries, small client-side helpers — no sensitive data) that
-// login.js/setup.js import as JS modules. Without this, an unauthenticated request for e.g.
-// /lib/i18n.js hits the redirect-to-login branch below and gets an HTML response instead of a
-// JS module, which browsers refuse to execute ("Expected a JavaScript-or-Wasm module script but
-// the server responded with a MIME type of text/html").
-const PUBLIC_PATH_PREFIXES = ['/lib/'];
-const PUBLIC_API_PREFIXES = ['/api/auth/status', '/api/auth/setup', '/api/auth/login', '/api/auth/reset'];
+// Welche Pfade ohne Anmeldung durchgehen, steht in lib/publicPaths.js: dort
+// liest ein Test sie gegen das, was setup.html und login.html tatsächlich laden.
+const { isPublicPath } = require('./lib/publicPaths');
 
 function hasValidSession(req) {
   return sessionStore.isValid(sessionStore.readSessionCookie(req));
 }
 
 app.use((req, res, next) => {
-  if (PUBLIC_PAGE_PATHS.has(req.path) || PUBLIC_PATH_PREFIXES.some(p => req.path.startsWith(p)) || PUBLIC_API_PREFIXES.some(p => req.path.startsWith(p))) return next();
+  if (isPublicPath(req.path)) return next();
 
   if (req.path.startsWith('/api/')) {
     if (!hasValidSession(req)) return res.status(401).json({ error: 'Nicht angemeldet' });

@@ -76,7 +76,7 @@ export default {
 
   // setup.html / setup.js
   'setup.title': 'Zugang einrichten',
-  'setup.subtitle': 'Noch kein Zugang vorhanden — lege jetzt den einzigen Admin-Zugang für dieses Dashboard an.',
+  'setup.subtitle': 'Dieses Dashboard hat noch keinen Zugang. Denk dir jetzt einen Benutzernamen und ein Passwort aus, damit meldest du dich hier an. Das ist nicht dein Spiel-Konto.',
   'setup.username': 'Benutzername',
   'setup.password': 'Passwort',
   'setup.passwordRepeat': 'Passwort wiederholen',
