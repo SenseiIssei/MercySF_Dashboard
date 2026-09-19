@@ -1,18 +1,48 @@
 import de from './i18n/de.js';
 import en from './i18n/en.js';
+import cs from './i18n/cs.js';
+import es from './i18n/es.js';
+import fr from './i18n/fr.js';
+import it from './i18n/it.js';
+import ja from './i18n/ja.js';
+import pl from './i18n/pl.js';
+import ru from './i18n/ru.js';
+import zh from './i18n/zh.js';
 
-const DICTS = { de, en };
+const DICTS = { en, de, cs, es, fr, it, ja, pl, ru, zh };
+
+/**
+ * Die Sprachen, jede unter ihrem eigenen Namen.
+ *
+ * Unter dem eigenen Namen und nicht unter dem deutschen oder englischen: wer
+ * eine Oberflaeche in einer Sprache sucht, die er nicht lesen kann, findet
+ * "Tschechisch" nicht, "Cestina" aber schon. Und keine Flaggen: eine Flagge ist
+ * ein Land und keine Sprache.
+ */
+export const LANGUAGES = [
+  { code: 'en', name: 'English' },
+  { code: 'de', name: 'Deutsch' },
+  { code: 'cs', name: 'Čeština' },
+  { code: 'es', name: 'Español' },
+  { code: 'fr', name: 'Français' },
+  { code: 'it', name: 'Italiano' },
+  { code: 'ja', name: '日本語' },
+  { code: 'pl', name: 'Polski' },
+  { code: 'ru', name: 'Русский' },
+  { code: 'zh', name: '中文' },
+];
 const STORAGE_KEY = 'mercy-lang';
 
 let activeLang = 'en';
 const listeners = new Set();
 
-// English is the project default (matches the primarily-English README/docs) — only switches to
-// German when the browser explicitly reports it; any other locale falls back to English rather
-// than German.
+// Englisch ist die Voreinstellung, und jede Sprache, die der Browser meldet und
+// die es hier gibt, gewinnt dagegen. Frueher gab es nur zwei, und alles ausser
+// Deutsch landete auf Englisch; seit es zehn sind, waere das eine Seite in der
+// falschen Sprache fuer jemanden, dessen Sprache danebenliegt.
 function detectBrowserLang() {
   const raw = (navigator.language || 'en').slice(0, 2).toLowerCase();
-  return raw === 'de' ? 'de' : 'en';
+  return DICTS[raw] ? raw : 'en';
 }
 
 function interpolate(str, vars) {

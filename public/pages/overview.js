@@ -72,6 +72,7 @@ export default {
       <section class="card" id="no-data-card" style="display:none">
         <p>${t('overview.noDataHint')}</p>
       </section>
+      <div class="game-cards">
       <section class="card collapsible-card" id="events-card">
         <div class="card-header">
           <span>${t('events.title')}</span>
@@ -94,7 +95,6 @@ export default {
         <p id="models-next" class="muted">${t('models.loading')}</p>
         <ul id="models-list" class="muted" style="margin:.4rem 0 0 1rem"></ul>
       </section>
-      <div class="game-cards">
         <section class="card collapsible-card" id="view-legendary_dungeon">
           <div class="card-header">
             <span>${t('views.legendaryTitle')}</span>
@@ -128,7 +128,7 @@ export default {
       </div>
       <section class="card collapsible-card accounts-card" id="accounts-card">
         <div class="card-header">
-          <span>Accounts</span>
+          <span>${t('overview.accountsTitle')}</span>
           <span id="accounts-running" class="muted"></span>
         </div>
         <div class="table-scroll">
@@ -201,7 +201,7 @@ export default {
           <div id="scouted-players-body" class="muted">${t('overview.selectAccountLog')}</div>
         </section>
         <section class="card collapsible-card" id="activity-log-card">
-          <div class="card-header"><span>Activity Log</span></div>
+          <div class="card-header"><span>${t('overview.activityLogTitle')}</span></div>
           <div id="activity-log" class="activity-log">${t('overview.selectAccountLog')}</div>
         </section>
       </div>
@@ -319,7 +319,8 @@ export default {
 
     async function renderAccountsTable(accounts) {
       const body = wrap.querySelector('#accounts-table-body');
-      wrap.querySelector('#accounts-running').textContent = `${accounts.length} Account(s)`;
+      wrap.querySelector('#accounts-running').textContent =
+        t('overview.accountsCount', { count: accounts.length });
 
       const totalPages = totalAccountsPages(accounts.length);
       if (accountsPage >= totalPages) accountsPage = totalPages - 1;
@@ -732,7 +733,12 @@ export default {
         body.replaceChildren(dl);
       } catch (err) {
         badge.textContent = '';
-        body.textContent = t('analytics.loadError', { message: err.message });
+        // 502 heisst hier fast immer dasselbe: der laufende Bot hat die
+        // Sitzung, und dieser Abruf hat den Wettlauf darum verloren. "Bad
+        // Gateway" sagt das niemandem.
+        body.textContent = /502|Bad Gateway/i.test(err.message)
+          ? t('views.busy')
+          : t('analytics.loadError', { message: err.message });
       }
     }
 
@@ -850,10 +856,31 @@ export default {
     // Takt aufgerufen warf die Seite den Bot, dem sie zuschaute, zwoelfmal pro
     // Minute hinaus. Sie laden beim Oeffnen, beim Wechsel des Charakters und
     // wenn jemand auf den Knopf drueckt.
+    // Nacheinander, nicht gleichzeitig.
+    //
+    // Jede dieser Karten kostet einen Login ins Spiel, und fuer einen
+    // Charakter gibt es dort genau eine Sitzung. Gleichzeitig aufgerufen
+    // streiten sich vier Logins um dieselbe Sitzung und um die des laufenden
+    // Bots dazu: auf dem Bildschirm standen drei Karten mit "Bad Gateway",
+    // waehrend dieselben Abrufe einzeln aufgerufen sauber antworteten.
+    //
+    // Nacheinander dauert es laenger. Das ist der Preis dafuer, dass es
+    // funktioniert.
+    let slowCardsRunning = null;
     function renderSlowCards(force = false) {
-      renderModels(force);
-      renderEvents(ctx.getAccountId(), force);
-      for (const name of Object.keys(VIEW_CARDS)) renderViewCard(name, force);
+      if (slowCardsRunning) return slowCardsRunning;
+      slowCardsRunning = (async () => {
+        try {
+          await renderModels(force);
+          await renderEvents(ctx.getAccountId(), force);
+          for (const name of Object.keys(VIEW_CARDS)) {
+            await renderViewCard(name, force);
+          }
+        } finally {
+          slowCardsRunning = null;
+        }
+      })();
+      return slowCardsRunning;
     }
 
     render().then(() => {

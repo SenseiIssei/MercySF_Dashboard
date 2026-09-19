@@ -449,6 +449,7 @@ export default {
   'views.hellevatorTitle': 'Höllenaufzug',
   'views.worldBossTitle': 'Weltboss',
   'views.refreshTitle': 'Jetzt neu abfragen (ein Login ins Spiel)',
+  'views.busy': 'Gerade nicht abfragbar: der laufende Bot hält die Sitzung. Der Knopf versucht es erneut.',
   'views.loading': 'wird geladen …',
   'views.selectAccount': 'Wähle einen Account.',
   'views.noData': 'Keine Daten.',
@@ -664,4 +665,7 @@ export default {
   'v2.tooltipMushrooms': 'Pilze',
   'v2.tooltipPlannedToday': 'Heute geplant',
   'v2.tooltipStadtwache': 'Stadtwache',
+  'overview.accountsTitle': 'Accounts',
+  'overview.accountsCount': '{{count}} Account(s)',
+  'overview.activityLogTitle': 'Aktivitätsprotokoll',
 };

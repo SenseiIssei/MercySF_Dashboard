@@ -1,4 +1,4 @@
-import { t, getLanguage, setLanguageAuthenticated, onLanguageChange } from '/lib/i18n.js';
+import { t, getLanguage, setLanguageAuthenticated, onLanguageChange, LANGUAGES } from '/lib/i18n.js';
 
 const state = {
   accountId: null,
@@ -79,6 +79,8 @@ const PAGES = [
 ];
 
 let currentUnmount = null;
+// Zaehlt die Anlaeufe, eine Seite aufzubauen. Siehe renderRoute().
+let pageGeneration = 0;
 
 function fmtLevel(acc) {
   return acc.stats ? t('router.level', { level: acc.stats.level }) : t('router.noData');
@@ -385,14 +387,32 @@ async function renderRoute() {
     try { currentUnmount(); } catch (e) { console.error(e); }
     currentUnmount = null;
   }
-  root.innerHTML = '';
+
+  // Wer zuletzt kommt, baut die Seite. Alle davor hoeren hier auf.
+  //
+  // Diese Funktion wartet in der Mitte auf ein `import`, und beim Start rufen
+  // sie zwei Dinge fast gleichzeitig auf: der Start selbst und die
+  // Sprachwahl, sobald sie geladen ist. Beide kamen an der Leerung vorbei,
+  // beide warteten, und dann haengte jede ihre Seite an: die Uebersicht stand
+  // zweimal untereinander, mit allen Karten doppelt.
+  //
+  // Sichtbar war das Doppelte. Teuer war das Unsichtbare: jede Kopie bringt
+  // ihren eigenen Fuenf-Sekunden-Takt mit, und `currentUnmount` merkt sich
+  // nur die letzte. Die erste ruft ihre Abfragen bis zum naechsten Neuladen
+  // weiter auf, ohne dass irgendwo etwas davon zu sehen waere.
+  const generation = ++pageGeneration;
 
   try {
     const mod = await import(`/pages/${pageMeta.id}.js`);
+    if (generation !== pageGeneration) return;
     const page = mod.default;
+    // Erst hier geleert: wer abgebrochen hat, laesst die Seite stehen, statt
+    // sie kurz weiss blinken zu lassen.
+    root.innerHTML = '';
     const result = page.mount(root, ctx);
     if (typeof result === 'function') currentUnmount = result;
   } catch (err) {
+    if (generation !== pageGeneration) return;
     root.innerHTML = `<div class="card"><p>${t('router.pageLoadError', { page: pageMeta.id, message: err.message })}</p></div>`;
   }
 }
@@ -564,15 +584,36 @@ function initAccessMenu() {
   });
 }
 
+
+/**
+ * Die Sprachwahl als Liste statt als Umschalter.
+ *
+ * Es waren zwei Sprachen und ein Knopf, der zwischen ihnen hin und her
+ * sprang. Bei zehn ist das kein Knopf mehr, sondern ein Ratespiel.
+ */
+function buildLanguagePicker(el, current, onPick) {
+  el.innerHTML = '';
+  const select = document.createElement('select');
+  select.className = 'lang-select';
+  select.setAttribute('aria-label', 'Language');
+  for (const { code, name } of LANGUAGES) {
+    const opt = document.createElement('option');
+    opt.value = code;
+    opt.textContent = name;
+    if (code === current) opt.selected = true;
+    select.appendChild(opt);
+  }
+  select.addEventListener('change', () => onPick(select.value));
+  el.appendChild(select);
+  return select;
+}
+
 function initLangToggle() {
-  const btn = document.getElementById('lang-toggle-btn');
-  if (!btn) return;
-  const apply = (lang) => { btn.textContent = lang === 'de' ? 'EN' : 'DE'; };
-  apply(getLanguage());
-  btn.addEventListener('click', async () => {
-    const next = getLanguage() === 'de' ? 'en' : 'de';
+  const el = document.getElementById('lang-toggle-btn');
+  if (!el) return;
+  buildLanguagePicker(el, getLanguage(), async (lang) => {
     try {
-      await setLanguageAuthenticated(next, fetchJSON);
+      await setLanguageAuthenticated(lang, fetchJSON);
     } catch (err) {
       console.error('Failed to persist language choice', err);
     }
@@ -580,8 +621,9 @@ function initLangToggle() {
 }
 
 onLanguageChange((lang) => {
-  const btn = document.getElementById('lang-toggle-btn');
-  if (btn) btn.textContent = lang === 'de' ? 'EN' : 'DE';
+  const el = document.getElementById('lang-toggle-btn');
+  const select = el && el.querySelector('select');
+  if (select) select.value = lang;
   renderNav();
   renderSidebarAccounts();
   renderTopbarAccountSelect();
