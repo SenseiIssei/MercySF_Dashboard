@@ -5,8 +5,9 @@
 Eine Oberfläche im Browser für [Mercy SF](https://mercysf.app). Sie startet für
 dich die offizielle `mercy-cli`, einen Prozess je Charakter, und zeigt, was
 jeder davon tut: Level, Gold, Pilze, die Zähler für Arena und Verlies, das
-legendäre Verlies, den Höllenaufzug, den Weltboss, welche Events laufen und ob
-die gelernten Kampfmodelle angekommen sind.
+legendäre Verlies, den Höllenaufzug, den Weltboss, die vier Klassen-Verliese der
+Class World, welche Events laufen und ob die gelernten Kampfmodelle angekommen
+sind.
 
 Am Bot selbst ändert sie nichts. Alles läuft über die CLI, und die Anzeigen für
 Ausrüstung, Gilde, Taverne und Post kommen über
