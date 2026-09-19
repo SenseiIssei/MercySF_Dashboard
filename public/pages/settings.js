@@ -31,7 +31,13 @@ const GROUP_LABELS_EN = {
 };
 
 function groupLabels() {
-  return getLanguage() === 'en' ? GROUP_LABELS_EN : GROUP_LABELS_DE;
+  // Deutsch bekommt Deutsch, alles andere Englisch.
+  //
+  // Vorher stand hier die Frage andersherum: "ist die Sprache Englisch?" Bei
+  // zwei Sprachen war das dasselbe. Seit es zehn sind, bekam jemand mit
+  // japanischer oder spanischer Oberfläche auf dieser Seite deutsche
+  // Beschriftungen, und Deutsch ist für ihn keine Rückfallsprache.
+  return getLanguage() === 'de' ? GROUP_LABELS_DE : GROUP_LABELS_EN;
 }
 
 function groupKey(key) {
@@ -418,7 +424,7 @@ const LABELS_EN = {
 };
 
 function currentLabels() {
-  return getLanguage() === 'en' ? LABELS_EN : LABELS_DE;
+  return getLanguage() === 'de' ? LABELS_DE : LABELS_EN;
 }
 
 function humanizeKey(key) {
@@ -513,7 +519,7 @@ export default {
     let hasCurrentSettings = false;
 
     function fmtDate(iso) {
-      return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      return new Date(iso).toLocaleDateString(getLanguage(), { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
 
     async function loadTemplates() {

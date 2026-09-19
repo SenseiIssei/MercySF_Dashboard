@@ -455,7 +455,7 @@ function renderNotifPanel() {
       ${n.source ? `<div class="notif-item-char char-name">${escapeHtml(n.source)}</div>` : ''}
       <div class="notif-item-meta-row">
         <span class="notif-item-level-badge">${levelIcon(n.level)} ${n.level === 'error' ? 'ERROR' : 'WARN'}</span>
-        <span class="notif-item-time">${new Date(n.at).toLocaleTimeString('de-DE')}</span>
+        <span class="notif-item-time">${new Date(n.at).toLocaleTimeString(getLanguage())}</span>
       </div>
       <div class="notif-item-message">${escapeHtml(n.message)}</div>
     </div>`).join('');

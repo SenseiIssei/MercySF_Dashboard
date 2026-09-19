@@ -1,4 +1,4 @@
-import { t } from '/lib/i18n.js';
+import { t, getLanguage } from '/lib/i18n.js';
 
 function fmt(n) {
   if (n === undefined || n === null) return '—';
@@ -474,7 +474,7 @@ export default {
               <thead><tr><th>${t('analytics.colTime')}</th><th>${t('overview.colEnemy')}</th><th>${t('analytics.colType')}</th><th>${t('overview.colResult')}</th><th>${t('analytics.epLabel')}</th><th>${t('overview.colSilver')}</th><th>${t('analytics.honorLabel')}</th></tr></thead>
               <tbody>${data.battles.map(b => `
                 <tr>
-                  <td class="muted">${new Date(b.timestamp).toLocaleString('de-DE')}</td>
+                  <td class="muted">${new Date(b.timestamp).toLocaleString(getLanguage())}</td>
                   <td class="char-name">${escapeHtml(b.enemy_name || '—')}</td>
                   <td>${kindLabels[b.kind] || escapeHtml(b.kind || '—')}</td>
                   <td><span class="battle-result ${b.won ? 'win' : 'loss'}">${b.won ? t('overview.win') : t('overview.loss')}</span></td>
@@ -597,7 +597,7 @@ export default {
         ${mail.recent.map(entry => `
           <div class="mail-row ${entry.read ? '' : 'unread'}">
             <span>${escapeHtml(entry.title || t('overview.noSubject'))}</span>
-            <span class="muted">${t('overview.mailFrom', { from: escapeHtml(entry.from) })} · ${new Date(entry.date).toLocaleString('de-DE')}</span>
+            <span class="muted">${t('overview.mailFrom', { from: escapeHtml(entry.from) })} · ${new Date(entry.date).toLocaleString(getLanguage())}</span>
           </div>`).join('')}
       `;
     }
