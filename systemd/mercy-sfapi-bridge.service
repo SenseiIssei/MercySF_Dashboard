@@ -4,8 +4,16 @@ After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/mercy/dashboard/sfapi-bridge
-ExecStart=/opt/mercy/dashboard/sfapi-bridge/target/release/mercy-sfapi-bridge
+# Die Binaerdatei, nicht der Bauordner.
+#
+# Hier stand der Pfad in target/release, also dorthin, wo ein Bau aus dem
+# Quelltext sie ablegt. Damit musste jeder Server sie selbst kompilieren: zehn
+# Minuten und ein ganzer Rust-Werkzeugkasten fuer eine Datei, die auf jedem
+# Server dieselbe ist. Der Installer laedt sie jetzt fertig nach
+# /opt/mercy/mercy-sfapi-bridge, und nur wenn das nicht geht, baut er sie und
+# legt sie an dieselbe Stelle.
+WorkingDirectory=/opt/mercy
+ExecStart=/opt/mercy/mercy-sfapi-bridge
 Restart=on-failure
 RestartSec=3
 User=root

@@ -71,9 +71,14 @@ cli_arch_mismatches() {
 }
 
 NODE_ONLY=false
+WANT_DOCKER=false
 for arg in "$@"; do
   case "$arg" in
     --node) NODE_ONLY=true ;;
+    # Die Docker-Variante, fuer die, die sie ausdruecklich wollen. Frueher war
+    # das eine Frage waehrend der Installation; siehe weiter unten, warum sie
+    # weg ist.
+    --docker) WANT_DOCKER=true ;;
   esac
 done
 
@@ -386,17 +391,17 @@ if [[ -n "$EXISTING_MODE" && "$NODE_ONLY" == "false" ]]; then
   fi
   INSTALL_MODE="native"
 else
+  # Kein Zwischenruf mehr.
+  #
+  # Hier stand eine Frage nach "native oder docker", fuenf Sekunden Pause davor,
+  # gestellt an jemanden, der gerade einen Befehl aus der README kopiert hat und
+  # von beidem noch nie gehoert hat. Die richtige Antwort ist fuer fast jeden
+  # "native", und wer Docker will, sagt das mit --docker.
+  #
+  # Ein Installer, der nichts fragt, ist einer, der nicht schiefgehen kann,
+  # weil jemand die falsche Taste gedrueckt hat.
   INSTALL_MODE="native"
-  # --node is exclusively for the slim, native node-agent install (see the NODE_ONLY block
-  # below) — the Docker path has add-node.sh for that instead, so skip the Docker prompt when
-  # --node was explicitly given.
-  if [[ "$NODE_ONLY" == "false" ]] && { [[ -t 0 ]] || [[ -e /dev/tty ]]; }; then
-    sleep 5
-    read -rp "  Installation type — [n]ative (systemd) or [d]ocker? [n/d]: " ANSWER < /dev/tty
-    if [[ "${ANSWER,,}" == "d" || "${ANSWER,,}" == "docker" ]]; then
-      INSTALL_MODE="docker"
-    fi
-  fi
+  [[ "$WANT_DOCKER" == "true" ]] && INSTALL_MODE="docker"
 fi
 
 log "Checking build memory headroom (native compiles: sf-api bridge, node-pty/better-sqlite3; Docker: same builds inside the image)"
@@ -421,10 +426,36 @@ BUILD_DEPS="curl git build-essential python3 openssl ca-certificates wireguard-t
 # a resolvectl-backed shim when systemd-resolved is active (which is what NetworkManager uses for
 # DNS by default too) — the standalone package is only needed as a fallback when neither is
 # managing DNS at all.
-if ! systemctl is-active --quiet NetworkManager 2>/dev/null && ! systemctl is-active --quiet systemd-resolved 2>/dev/null; then
-  BUILD_DEPS="$BUILD_DEPS resolvconf"
-fi
 run_step "Installing build dependencies" apt-get install -y -qq $BUILD_DEPS
+
+# `resolvconf` getrennt, und ein Fehlschlag beendet nichts.
+#
+# Es gehoert zur VPN-Umschaltung je Account, also zu einer Funktion, die die
+# meisten nie einschalten. In der Liste oben stehend hat es die ganze
+# Installation beendet, wenn es nicht durchging: `set -e`, und die Meldung
+# war "Sub-process /usr/bin/dpkg returned an error code (1)" ohne einen
+# Hinweis darauf, dass es um ein Paket fuer eine Zusatzfunktion ging.
+#
+# Ein Paket, das nur eine Zusatzfunktion braucht, darf die Installation nicht
+# kosten.
+if ! systemctl is-active --quiet NetworkManager 2>/dev/null   && ! systemctl is-active --quiet systemd-resolved 2>/dev/null; then
+  if apt-get install -y -qq resolvconf >/dev/null 2>&1; then
+    ok "resolvconf installed (needed by the optional per-account VPN)"
+  else
+    # Und wieder heraus damit.
+    #
+    # Ein halb eingerichtetes Paket laesst dpkg in einem Zustand zurueck, in
+    # dem JEDER spaetere apt-Aufruf ueber dasselbe Paket stolpert. Der
+    # Installer ist danach an der Node.js-Installation gestorben, und die
+    # Meldung sprach von Node.js, obwohl es um resolvconf ging. Ein
+    # Fehlschlag, der spaetere Schritte vergiftet, ist schlimmer als der
+    # Fehlschlag selbst.
+    apt-get remove -y -qq resolvconf >/dev/null 2>&1 || true
+    dpkg --remove --force-remove-reinstreq resolvconf >/dev/null 2>&1 || true
+    apt-get -f install -y -qq >/dev/null 2>&1 || true
+    warn "resolvconf could not be installed and was removed again. Everything works except the optional per-account VPN."
+  fi
+fi
 
 progress "Checking Node.js"
 if ! command -v node >/dev/null 2>&1 || [[ "$(node -v | sed 's/v//' | cut -d. -f1)" -lt 18 ]]; then
@@ -539,14 +570,11 @@ if [[ "$NODE_ONLY" == "true" ]]; then
   exit 0
 fi
 
-progress "Checking Rust/Cargo"
-if ! command -v cargo >/dev/null 2>&1; then
-  run_step "Installing Rust/Cargo (for the sf-api bridge)" bash -c "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
-else
-  ok "Rust/Cargo already present ($(cargo --version)) — skipping install"
-fi
+# Rust is only needed if the prebuilt bridge cannot be downloaded. Installing a
+# whole toolchain and compiling it takes ten minutes on a small server, every
+# single time, for a binary that is the same on every one of them.
 # shellcheck disable=SC1090
-source "$HOME/.cargo/env"
+[[ -f "$HOME/.cargo/env" ]] && source "$HOME/.cargo/env"
 
 progress "Installing npm dependencies (compiles node-pty natively)"
 cd "$DASHBOARD_DIR"
@@ -566,9 +594,27 @@ systemctl daemon-reload
 systemctl enable mercy-dashboard >/dev/null 2>&1
 systemctl restart mercy-dashboard
 
-progress "Building the sf-api bridge and setting it up as a systemd service (equipment lookups, localhost only)"
-cd "$DASHBOARD_DIR/sfapi-bridge"
-run_step "cargo build --release — this can take a few minutes" cargo build --release -j "$BUILD_JOBS"
+progress "Setting up the sf-api bridge (equipment lookups, localhost only)"
+# The prebuilt binary first. It is the same on every server, so compiling it on
+# each one is ten minutes of a small machine's life for nothing. Building from
+# source stays as the fallback, and that is when Rust gets installed.
+if [[ -x "$SFAPI_BRIDGE_PATH" ]]; then
+  ok "sf-api bridge already installed"
+elif curl -fsSL -o "$SFAPI_BRIDGE_PATH" "$SFAPI_BRIDGE_DOWNLOAD_URL"; then
+  chmod +x "$SFAPI_BRIDGE_PATH"
+  ok "sf-api bridge downloaded"
+else
+  warn "No prebuilt bridge for this machine — building it from source, which takes a few minutes"
+  if ! command -v cargo >/dev/null 2>&1; then
+    run_step "Installing Rust/Cargo (needed to build the bridge)" bash -c "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
+    # shellcheck disable=SC1090
+    source "$HOME/.cargo/env"
+  fi
+  cd "$DASHBOARD_DIR/sfapi-bridge"
+  run_step "cargo build --release" cargo build --release -j "$BUILD_JOBS"
+  cp "$DASHBOARD_DIR/sfapi-bridge/target/release/mercy-sfapi-bridge" "$SFAPI_BRIDGE_PATH"
+  chmod +x "$SFAPI_BRIDGE_PATH"
+fi
 cp "$DASHBOARD_DIR/systemd/mercy-sfapi-bridge.service" /etc/systemd/system/mercy-sfapi-bridge.service
 systemctl daemon-reload
 systemctl enable mercy-sfapi-bridge >/dev/null 2>&1
@@ -578,9 +624,31 @@ cd "$DASHBOARD_DIR"
 sleep 2
 if systemctl is-active --quiet mercy-dashboard && systemctl is-active --quiet mercy-sfapi-bridge; then
   IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
-  echo -e "\n${GREEN}${BOLD}✓ Done — dashboard running at https://${IP:-<server-ip>}:8080${RESET}"
-  echo "  Connect more servers as nodes: run 'curl ... | bash -s -- --node' there and enter the"
-  echo "  displayed pairing code under 'Nodes' in this dashboard."
+  # Der Abschluss sagt, was jetzt zu tun ist.
+  #
+  # Vorher stand hier eine Zeile mit der Adresse und ein Satz ueber Knoten,
+  # den niemand bei der ersten Installation braucht. Wer gerade fertig ist,
+  # hat genau drei Fragen: wohin klicke ich, warum warnt der Browser, und
+  # was mache ich als Erstes.
+  echo
+  echo -e "${GREEN}${BOLD}  Fertig.${RESET}"
+  echo
+  echo -e "  ${BOLD}1.${RESET} Im Browser oeffnen:  ${BOLD}https://${IP:-<server-ip>}:8080${RESET}"
+  echo -e "     Der Browser warnt wegen des selbstsignierten Zertifikats."
+  echo -e "     Das ist so gewollt: bestaetigen und weitergehen."
+  echo
+  echo -e "  ${BOLD}2.${RESET} Zugang anlegen. Benutzername und Passwort denkst du dir jetzt aus;"
+  echo -e "     damit meldest du dich an ${BOLD}diesem Dashboard${RESET} an, nicht am Spiel."
+  echo -e "     Die zwoelf Woerter danach einmal sichern: sie sind der einzige Weg zurueck."
+  echo
+  echo -e "  ${BOLD}3.${RESET} Unter ${BOLD}Account-Verwaltung${RESET} deinen Shakes-und-Fidget-Login eintragen."
+  echo -e "     Das Dashboard findet jeden Charakter dazu. Auf Start druecken, fertig."
+  echo
+  echo -e "  ${DIM}Weiteren Server anhaengen:${RESET}"
+  echo -e "  ${DIM}  curl -fsSL https://raw.githubusercontent.com/SenseiIssei/MercySF_Dashboard/main/install.sh | bash -s -- --node${RESET}"
+  echo -e "  ${DIM}Dieses Skript noch einmal laufen lassen aktualisiert nur den Code.${RESET}"
+  echo -e "  ${DIM}Konten, Passwoerter, Zertifikat und Statistiken bleiben, wie sie sind.${RESET}"
+  echo
 else
   warn "A service is not active — check the logs with: journalctl -u mercy-dashboard -n 50 --no-pager / journalctl -u mercy-sfapi-bridge -n 50 --no-pager"
   exit 1
