@@ -741,3 +741,53 @@ body.anon-mode .char-name:hover {
 }
 .view-rows dt { color: var(--muted); }
 .view-rows dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* ── Zeichen statt Bildzeichen ─────────────────────────────────────────────
+   Die Oberfläche hatte rund hundert Emoji: ein Aktenregister in der
+   Navigation, ein Gehirn auf einer Karte, ein Bierkrug in der Taverne. Sie
+   sind auf jedem Rechner anders gezeichnet, in jeder Schriftart anders gross,
+   und zusammen sehen sie aus wie eine Chat-Nachricht statt wie ein Werkzeug. */
+.nav-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+.nav-item.active .nav-icon { opacity: 1; }
+
+.sev-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.sev-dot.sev-error { background: var(--danger, #f87171); }
+.sev-dot.sev-warn { background: var(--warn, #fbbf24); }
+
+/* Kartenköpfe lesen sich als Beschriftung, nicht als Überschrift: kleiner,
+   gesperrt, ruhig. Die Zahl daneben in Ziffern gleicher Breite, damit sie beim
+   Aktualisieren nicht springt. */
+.card-header > span:first-child {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text);
+}
+.card-header .muted { font-variant-numeric: tabular-nums; }
+
+/* Die Strichzeichen in Knöpfen: so gross wie die Zeile, in der Farbe des
+   Textes, und ohne eigene Ausrichtung. */
+.glyph {
+  width: 15px;
+  height: 15px;
+  display: block;
+  margin: 0 auto;
+}
+.icon-btn .glyph, .password-toggle .glyph { opacity: 0.75; }
+.icon-btn:hover .glyph, .password-toggle:hover .glyph { opacity: 1; }
+.add-icon .glyph { width: 20px; height: 20px; }
+.brand-mark { width: 20px; height: 20px; display: block; }

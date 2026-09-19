@@ -74,7 +74,7 @@ export default {
       </section>
       <section class="card collapsible-card" id="events-card">
         <div class="card-header">
-          <span>🎉 ${t('events.title')}</span>
+          <span>${t('events.title')}</span>
           <span class="card-header-right">
             <span id="events-badge" class="muted"></span>
             <button class="icon-btn" id="events-refresh-btn" title="${t('events.refreshTitle')}">⟳</button>
@@ -85,7 +85,7 @@ export default {
       </section>
       <section class="card collapsible-card" id="models-card">
         <div class="card-header">
-          <span>🧠 ${t('models.title')}</span>
+          <span>${t('models.title')}</span>
           <span class="card-header-right">
             <span id="models-badge" class="muted"></span>
             <button class="icon-btn" id="models-refresh-btn" title="${t('models.refreshTitle')}">⟳</button>
@@ -97,7 +97,7 @@ export default {
       <div class="game-cards">
         <section class="card collapsible-card" id="view-legendary_dungeon">
           <div class="card-header">
-            <span>🏰 ${t('views.legendaryTitle')}</span>
+            <span>${t('views.legendaryTitle')}</span>
             <span class="card-header-right">
               <span class="muted" data-badge></span>
               <button class="icon-btn" data-refresh="legendary_dungeon" title="${t('views.refreshTitle')}">⟳</button>
@@ -107,7 +107,7 @@ export default {
         </section>
         <section class="card collapsible-card" id="view-hellevator">
           <div class="card-header">
-            <span>🛗 ${t('views.hellevatorTitle')}</span>
+            <span>${t('views.hellevatorTitle')}</span>
             <span class="card-header-right">
               <span class="muted" data-badge></span>
               <button class="icon-btn" data-refresh="hellevator" title="${t('views.refreshTitle')}">⟳</button>
@@ -117,7 +117,7 @@ export default {
         </section>
         <section class="card collapsible-card" id="view-world_boss">
           <div class="card-header">
-            <span>👹 ${t('views.worldBossTitle')}</span>
+            <span>${t('views.worldBossTitle')}</span>
             <span class="card-header-right">
               <span class="muted" data-badge></span>
               <button class="icon-btn" data-refresh="world_boss" title="${t('views.refreshTitle')}">⟳</button>
@@ -128,7 +128,7 @@ export default {
       </div>
       <section class="card collapsible-card accounts-card" id="accounts-card">
         <div class="card-header">
-          <span>👥 Accounts</span>
+          <span>Accounts</span>
           <span id="accounts-running" class="muted"></span>
         </div>
         <div class="table-scroll">
@@ -201,7 +201,7 @@ export default {
           <div id="scouted-players-body" class="muted">${t('overview.selectAccountLog')}</div>
         </section>
         <section class="card collapsible-card" id="activity-log-card">
-          <div class="card-header"><span>📜 Activity Log</span></div>
+          <div class="card-header"><span>Activity Log</span></div>
           <div id="activity-log" class="activity-log">${t('overview.selectAccountLog')}</div>
         </section>
       </div>
@@ -579,7 +579,7 @@ export default {
           <div class="alu-bar-label"><span>${t('overview.adventureLust')}</span><span>${tavern.adventurePoints}/${tavern.adventurePointsMax}</span></div>
           <div class="alu-bar-track"><div class="alu-bar-fill" style="width:${aluPct}%"></div></div>
         </div>
-        <div class="tavern-summary">🍺 ${tavern.beerDrunk}/${tavern.beerMax} · ${t('overview.tavernActionLabel', { action })}</div>
+        <div class="tavern-summary">${tavern.beerDrunk}/${tavern.beerMax} · ${t('overview.tavernActionLabel', { action })}</div>
         ${tavern.quests.map(q => `
           <div class="tavern-quest-row">
             <span>${escapeHtml(q.location)}</span>

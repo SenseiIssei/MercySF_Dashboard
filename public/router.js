@@ -49,12 +49,33 @@ export function injectStyleOnce(id, css) {
 
 const ctx = { fetchJSON, getAccountId, onAccountChange, injectStyleOnce };
 
+// Ein kleiner Satz Strichzeichen für die Navigation.
+//
+// Vorher standen dort Bildzeichen: ein Aktenregister, ein DNA-Strang, ein
+// Würfel, eine Weltkugel. Sie sind auf jedem Rechner anders gezeichnet, in
+// jeder Schriftart anders gross, und zusammen sehen sie aus wie eine
+// Chat-Nachricht und nicht wie ein Werkzeug. Diese hier sind ein Strich in der
+// Farbe des Textes, also überall gleich und in jedem Thema richtig.
+const ICONS = {
+  overview: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+  accounts: '<path d="M4 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/>',
+  'analytics-compare': '<path d="M4 19V5"/><path d="M4 15l5-5 4 3 7-7"/><path d="M20 6v5h-5"/>',
+  randomizer: '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.2"/><circle cx="15.5" cy="15.5" r="1.2"/><circle cx="15.5" cy="8.5" r="1.2"/><circle cx="8.5" cy="15.5" r="1.2"/>',
+  marketplace: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3Z"/>',
+};
+
+function icon(id) {
+  const pfad = ICONS[id];
+  if (!pfad) return '';
+  return `<svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${pfad}</svg>`;
+}
+
 const PAGES = [
-  { id: 'overview', icon: '▦', labelKey: 'nav.overview' },
-  { id: 'accounts', icon: '🗂', labelKey: 'nav.accounts' },
-  { id: 'analytics-compare', icon: '🧬', labelKey: 'nav.analyticsCompare' },
-  { id: 'randomizer', icon: '🎲', labelKey: 'nav.randomizer' },
-  { id: 'marketplace', icon: '🌐', labelKey: 'nav.marketplace' },
+  { id: 'overview', labelKey: 'nav.overview' },
+  { id: 'accounts', labelKey: 'nav.accounts' },
+  { id: 'analytics-compare', labelKey: 'nav.analyticsCompare' },
+  { id: 'randomizer', labelKey: 'nav.randomizer' },
+  { id: 'marketplace', labelKey: 'nav.marketplace' },
 ];
 
 let currentUnmount = null;
@@ -379,7 +400,7 @@ async function renderRoute() {
 function renderNav() {
   const nav = document.getElementById('nav');
   nav.innerHTML = PAGES.map(p =>
-    `<a class="nav-item" data-page="${p.id}" href="#/${p.id}"><span>${p.icon}</span> ${t(p.labelKey)}</a>`
+    `<a class="nav-item" data-page="${p.id}" href="#/${p.id}">${icon(p.id)}<span>${t(p.labelKey)}</span></a>`
   ).join('');
 }
 
@@ -387,7 +408,11 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 }
 
-function levelIcon(level) { return level === 'error' ? '🛑' : '⚠️'; }
+// Ein Punkt in der Farbe des Schweregrads statt eines Bildzeichens: die beiden
+// alten waren in jeder Schriftart anders gross und rissen die Zeile auseinander.
+function levelIcon(level) {
+  return `<span class="sev-dot sev-${level === 'error' ? 'error' : 'warn'}"></span>`;
+}
 
 let notifLastSeenId = parseInt(localStorage.getItem('mercy-notif-last-seen') || '0', 10);
 let notifLastPolledId = notifLastSeenId;

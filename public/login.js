@@ -25,12 +25,12 @@ function addPasswordToggles(root = document) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'password-toggle';
-    btn.textContent = '👁';
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="glyph"><path d="M3 12s3.6-6 9-6 9 6 9 6-3.6 6-9 6-9-6-9-6Z"/><circle cx="12" cy="12" r="2.6"/></svg>';
     btn.setAttribute('aria-label', t('common.showPassword'));
     btn.addEventListener('click', () => {
       const show = input.type === 'password';
       input.type = show ? 'text' : 'password';
-      btn.textContent = show ? '🙈' : '👁';
+      btn.innerHTML = show ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="glyph"><path d="M3 12s3.6-6 9-6 9 6 9 6-3.6 6-9 6-9-6-9-6Z"/><circle cx="12" cy="12" r="2.6"/><path d="M4 20 20 4"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="glyph"><path d="M3 12s3.6-6 9-6 9 6 9 6-3.6 6-9 6-9-6-9-6Z"/><circle cx="12" cy="12" r="2.6"/></svg>';
     });
     wrap.appendChild(btn);
   });
@@ -185,7 +185,7 @@ function showNewRecoveryPhrase(recoveryPhrase) {
 
   card.innerHTML = `
     <div class="auth-header">
-      <div class="auth-icon">🔑</div>
+      <div class="auth-icon"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="auth-icon-mark"><circle cx="8" cy="12" r="4"/><path d="M12 12h9"/><path d="M17 12v3"/><path d="M20 12v2"/></svg></div>
       <div>
         <h1 class="auth-title">${t('login.resetDoneTitle')}</h1>
         <p class="auth-subtitle">${t('login.resetDoneSubtitle')}</p>
@@ -202,7 +202,7 @@ function showNewRecoveryPhrase(recoveryPhrase) {
     </div>
 
     <div class="warning-banner">
-      <span class="icon">⚠️</span>
+      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" class="glyph"><path d="M12 4 2.8 20h18.4Z"/><path d="M12 10v4"/><path d="M12 17.2v.1"/></svg></span>
       <span>${t('login.saveWarning')}</span>
     </div>
 
