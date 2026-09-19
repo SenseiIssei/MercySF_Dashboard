@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const { findDataDir, findProfileByAccountId } = require('../lib/data');
+const { splitUpdates } = require('../lib/settingsSplit');
 const settingsDefaults = require('../lib/settingsDefaults');
 const credentialStore = require('../lib/credentialStore');
 const cli = require('../lib/cliExec');
@@ -109,17 +110,8 @@ router.put('/:accountId', express.json(), async (req, res) => {
     try {
       const current = await cli.runCli(cli.buildArgs(profile, ['--config']), { password });
       const config = current.config;
-      const settable = new Set(current.settable || []);
-      const allowedKeys = new Set(Object.keys(config));
-      const rejected = [];
-      const settableUpdates = {};
-      const fileUpdates = {};
-      for (const key of Object.keys(updates)) {
-        if (!allowedKeys.has(key)) { rejected.push(key); continue; }
-        if (typeof config[key] !== typeof updates[key]) { rejected.push(key); continue; }
-        if (settable.has(key) && typeof updates[key] === 'boolean') settableUpdates[key] = updates[key];
-        else fileUpdates[key] = updates[key];
-      }
+      const { settableUpdates, fileUpdates, rejected } =
+        splitUpdates(updates, config, current.settable, current.settable_numbers);
       if (rejected.length) {
         return res.status(400).json({ error: `Unbekannte oder typinkompatible Felder: ${rejected.join(', ')}` });
       }
@@ -136,8 +128,9 @@ router.put('/:accountId', express.json(), async (req, res) => {
         for (const change of result.changed || []) merged[change.key] = change.to;
       }
 
-      // Für alles außerhalb der settable-Liste (Zahlen, Strings, restliche Booleans) bietet die
-      // CLI aktuell keinen unterstützten Weg — Fallback bleibt der direkte Datei-Zugriff.
+      // Für alles, was die CLI weiterhin nicht selbst setzen kann — Texte, Zahlen
+      // außerhalb ihrer Bereiche, Booleans außerhalb der settable-Liste — bleibt
+      // der direkte Datei-Zugriff der Fallback.
       if (Object.keys(fileUpdates).length) {
         writeFileUpdates(req.params.accountId, fileUpdates, config);
         Object.assign(merged, fileUpdates);
