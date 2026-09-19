@@ -689,3 +689,37 @@ body.anon-mode .char-name:hover {
 .update-popup .update-popup-title { font-weight: 600; font-size: 13.5px; margin: 0 0 6px; padding-right: 16px; }
 .update-popup .update-popup-body { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
 .update-popup .update-popup-btn { width: auto; padding: 6px 14px; font-size: 12px; }
+
+/* ── Karten auf- und zuklappen ─────────────────────────────────────────────
+   makeCollapsible() setzt seit jeher die Klasse .collapsed und haengt ein
+   Chevron an die Kopfzeile. Nur stand zu beidem nie eine Regel in diesem
+   Stylesheet: der Klick auf jede Kartenkopfzeile tat nichts, und das Chevron
+   war ein Strich am rechten Rand. Beides sah nicht nach einer fehlenden Regel
+   aus, sondern nach einer Seite, die haengt. */
+.collapsible-card > .card-header {
+  cursor: pointer;
+  gap: 10px;
+  user-select: none;
+  border-radius: 6px;
+  transition: background-color .12s ease;
+}
+.collapsible-card > .card-header:hover {
+  background: var(--input-bg);
+  box-shadow: 0 0 0 6px var(--input-bg);
+}
+.card-header-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.card-chevron {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: transform .15s ease;
+}
+.card.collapsed > .card-header { margin-bottom: 0; }
+.card.collapsed .card-chevron { transform: rotate(-90deg); }
+.card.collapsed > *:not(.card-header) { display: none; }
