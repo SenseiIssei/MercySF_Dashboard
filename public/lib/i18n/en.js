@@ -70,7 +70,7 @@ export default {
   'login.continueToLogin': 'Continue to login',
 
   'setup.title': 'Set up access',
-  'setup.subtitle': 'No access set up yet — create the single admin account for this dashboard now.',
+  'setup.subtitle': 'This dashboard has no access yet. Pick a username and a password now, that is what you sign in here with. It is not your game account.',
   'setup.username': 'Username',
   'setup.password': 'Password',
   'setup.passwordRepeat': 'Repeat password',
