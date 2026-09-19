@@ -75,7 +75,10 @@ export default {
       <section class="card collapsible-card" id="events-card">
         <div class="card-header">
           <span>🎉 ${t('events.title')}</span>
-          <span id="events-badge" class="muted"></span>
+          <span class="card-header-right">
+            <span id="events-badge" class="muted"></span>
+            <button class="icon-btn" id="events-refresh-btn" title="${t('events.refreshTitle')}">⟳</button>
+          </span>
         </div>
         <ul id="events-list" class="muted" style="margin:.2rem 0 0 1rem"></ul>
         <p id="events-note" class="muted"></p>
@@ -83,7 +86,10 @@ export default {
       <section class="card collapsible-card" id="models-card">
         <div class="card-header">
           <span>🧠 ${t('models.title')}</span>
-          <span id="models-badge" class="muted"></span>
+          <span class="card-header-right">
+            <span id="models-badge" class="muted"></span>
+            <button class="icon-btn" id="models-refresh-btn" title="${t('models.refreshTitle')}">⟳</button>
+          </span>
         </div>
         <p id="models-next" class="muted">${t('models.loading')}</p>
         <ul id="models-list" class="muted" style="margin:.4rem 0 0 1rem"></ul>
@@ -263,6 +269,22 @@ export default {
       return Math.max(1, Math.ceil(total / parseInt(accountsPageSize, 10)));
     }
 
+    // Der Fuenf-Sekunden-Takt baute jedes Mal dieselbe Tabelle und dasselbe Log
+    // neu auf, auch wenn sich nichts geaendert hatte: pro Runde ein paar hundert
+    // DOM-Knoten, die der Browser gleich darauf wieder einsammelt. Das ist das
+    // Ruckeln und es ist auch der Speicher. Ein Vergleich mit dem, was zuletzt
+    // gezeichnet wurde, kostet dagegen fast nichts.
+    //
+    // Nur fuer Inhalte ohne relative Zeitangabe: was "vor 5s" anzeigt, aendert
+    // sich auch dann, wenn die Daten gleich bleiben, und wuerde hier einfrieren.
+    const zuletztGezeichnet = new Map();
+    function unveraendert(schluessel, wert) {
+      const jetzt = JSON.stringify(wert);
+      if (zuletztGezeichnet.get(schluessel) === jetzt) return true;
+      zuletztGezeichnet.set(schluessel, jetzt);
+      return false;
+    }
+
     async function renderAccountsTable(accounts) {
       const body = wrap.querySelector('#accounts-table-body');
       wrap.querySelector('#accounts-running').textContent = `${accounts.length} Account(s)`;
@@ -274,6 +296,8 @@ export default {
       const pageItems = accountsPageSize === 'all'
         ? accounts
         : accounts.slice(accountsPage * parseInt(accountsPageSize, 10), (accountsPage + 1) * parseInt(accountsPageSize, 10));
+
+      if (unveraendert(`accounts:${accountsPage}:${accountsPageSize}`, pageItems)) return;
 
       body.innerHTML = '';
       pageItems.forEach(acc => {
@@ -394,6 +418,7 @@ export default {
       const logEl = wrap.querySelector('#activity-log');
       if (!accountId) { logEl.textContent = t('overview.selectAccountLog'); return; }
       const lines = await ctx.fetchJSON(`/api/account/${encodeURIComponent(accountId)}/logs`);
+      if (unveraendert(`log:${accountId}`, lines)) return;
       if (!lines.length) { logEl.textContent = t('overview.noLogEntries'); return; }
       logEl.innerHTML = lines.map(l => `<div class="line">${highlightCharName(escapeHtml(l), charName)}</div>`).join('');
     }
@@ -581,7 +606,7 @@ export default {
     // Events einen Pilz wert sind" ERSETZT die Standardliste aus fünf, statt
     // sie zu ergänzen. Ein Charakter, der deshalb an einem Gold-Event kein
     // Bier kauft, sieht aus wie ein kaputter und tut genau das Eingestellte.
-    async function renderEvents(accountId) {
+    async function renderEvents(accountId, force = false) {
       const badge = wrap.querySelector('#events-badge');
       const list = wrap.querySelector('#events-list');
       const note = wrap.querySelector('#events-note');
@@ -590,7 +615,7 @@ export default {
       note.textContent = '';
       if (!accountId) { badge.textContent = ''; return; }
       try {
-        const e = await ctx.fetchJSON(`/api/events/${encodeURIComponent(accountId)}`);
+        const e = await ctx.fetchJSON(`/api/events/${encodeURIComponent(accountId)}${force ? '?refresh=1' : ''}`);
         if (e.unavailable) {
           badge.textContent = '';
           note.textContent = e.reason === 'cli-too-old'
@@ -637,14 +662,14 @@ export default {
       return t('models.nextHere');
     }
 
-    async function renderModels() {
+    async function renderModels(force = false) {
       const badge = wrap.querySelector('#models-badge');
       const next = wrap.querySelector('#models-next');
       const list = wrap.querySelector('#models-list');
       if (!badge || !next || !list) return;
       list.innerHTML = '';
       try {
-        const m = await ctx.fetchJSON('/api/models');
+        const m = await ctx.fetchJSON(`/api/models${force ? '?refresh=1' : ''}`);
         if (m.unsupported) {
           badge.textContent = t('models.unsupportedBadge');
           next.textContent = m.next;
@@ -687,8 +712,17 @@ export default {
       renderStatCards(current);
       await renderDailyEarnings(accountId);
       await renderLog(accountId, current ? current.charName : null);
-      await renderModels();
-      await renderEvents(accountId);
+    }
+
+    // Die beiden Karten haengen NICHT am Fuenf-Sekunden-Takt, und das ist der
+    // ganze Punkt: hinter /api/events stecken zwei Logins ins Spiel, und jeder
+    // davon nimmt dem laufenden Bot desselben Charakters die Sitzung weg. Im
+    // Takt aufgerufen warf die Seite den Bot, dem sie zuschaute, zwoelfmal pro
+    // Minute hinaus. Sie laden beim Oeffnen, beim Wechsel des Charakters und
+    // wenn jemand auf den Knopf drueckt.
+    function renderSlowCards(force = false) {
+      renderModels(force);
+      renderEvents(ctx.getAccountId(), force);
     }
 
     render().then(() => {
@@ -698,6 +732,11 @@ export default {
     });
     const unsub = ctx.onAccountChange(render);
     const interval = setInterval(render, 5000);
+
+    renderSlowCards();
+    const unsubSlowCards = ctx.onAccountChange(() => renderSlowCards());
+    wrap.querySelector('#models-refresh-btn').addEventListener('click', () => renderModels(true));
+    wrap.querySelector('#events-refresh-btn').addEventListener('click', () => renderEvents(ctx.getAccountId(), true));
 
     const unsubGameState = ctx.onAccountChange(() => renderGameState(getCurrentProfileId()));
     wrap.querySelector('#gamestate-refresh-btn').addEventListener('click', () => renderGameState(getCurrentProfileId()));
@@ -730,6 +769,10 @@ export default {
 
     wrap.querySelectorAll('.collapsible-card').forEach(cardEl => makeCollapsible(cardEl, cardEl.id));
 
-    return () => { unsub(); unsubGameState(); unsubBattleHistory(); unsubRecentActions(); unsubScoutedPlayers(); clearInterval(interval); };
+    return () => {
+      unsub(); unsubGameState(); unsubBattleHistory(); unsubRecentActions(); unsubScoutedPlayers();
+      unsubSlowCards();
+      clearInterval(interval);
+    };
   }
 };
