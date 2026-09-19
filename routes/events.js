@@ -47,8 +47,8 @@ router.get('/:accountId', async (req, res) => {
   }
   try {
     const [status, config] = await Promise.all([
-      cli.runCli(cli.buildArgs(profile, ['--status']), { password }),
-      cli.runCli(cli.buildArgs(profile, ['--config']), { password }),
+      cli.readCli(cli.buildArgs(profile, ['--status']), { password }),
+      cli.readCli(cli.buildArgs(profile, ['--config']), { password }),
     ]);
     // Ältere CLI-Versionen kennen das Feld noch nicht. Dann gibt es nichts zu
     // zeigen, und die Karte sagt warum, statt eine leere Liste als "es läuft

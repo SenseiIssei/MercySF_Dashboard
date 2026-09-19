@@ -71,7 +71,7 @@ router.get('/:accountId/:name', async (req, res) => {
   }
 
   try {
-    const antwort = await cli.runCli(cli.buildArgs(profile, ['--view', name]), {
+    const antwort = await cli.readCli(cli.buildArgs(profile, ['--view', name]), {
       password,
       timeoutMs: 60000,
     });

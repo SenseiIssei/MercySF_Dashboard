@@ -27,7 +27,6 @@ function fmtUptime(startedAt) {
 export default {
   id: 'accounts',
   label: 'Account-Verwaltung',
-  icon: '🗂',
   mount(container, ctx) {
     const css = `
       .accounts-page .add-card {
@@ -178,7 +177,7 @@ export default {
       <h1 class="page-title">${t('accounts.title')}</h1>
       <div class="add-card">
         <div class="add-header">
-          <div class="add-icon">➕</div>
+          <div class="add-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="glyph"><path d="M12 5v14M5 12h14"/></svg></div>
           <div>
             <div class="add-title">${t('accounts.addTitle')}</div>
             <div class="add-subtitle">${t('accounts.addSubtitle')}</div>
@@ -230,12 +229,12 @@ export default {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'password-toggle';
-      btn.textContent = '👁';
+      btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="glyph"><path d="M3 12s3.6-6 9-6 9 6 9 6-3.6 6-9 6-9-6-9-6Z"/><circle cx="12" cy="12" r="2.6"/></svg>';
       btn.setAttribute('aria-label', t('common.showPassword'));
       btn.addEventListener('click', () => {
         const show = input.type === 'password';
         input.type = show ? 'text' : 'password';
-        btn.textContent = show ? '🙈' : '👁';
+        btn.innerHTML = show ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="glyph"><path d="M3 12s3.6-6 9-6 9 6 9 6-3.6 6-9 6-9-6-9-6Z"/><circle cx="12" cy="12" r="2.6"/><path d="M4 20 20 4"/></svg>' : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="glyph"><path d="M3 12s3.6-6 9-6 9 6 9 6-3.6 6-9 6-9-6-9-6Z"/><circle cx="12" cy="12" r="2.6"/></svg>';
       });
       fieldWrap.appendChild(btn);
     })();
@@ -475,7 +474,7 @@ export default {
             <div class="profile-info">
               <div class="profile-nickname-row">
                 <span class="profile-nickname char-name" data-role="nickname">${escapeHtml(p.nickname)}</span>
-                <button class="rename-btn" data-action="rename" title="${t('nodes.renameTitle')}">✏️</button>
+                <button class="rename-btn" data-action="rename" title="${t('nodes.renameTitle')}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="glyph"><path d="m4 20 4-1 10-10-3-3L5 16Z"/><path d="m14 6 3 3"/></svg></button>
               </div>
               <div class="profile-meta char-name" data-role="meta">${metaLine(p)}</div>
             </div>
