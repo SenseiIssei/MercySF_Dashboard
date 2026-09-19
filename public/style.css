@@ -723,3 +723,21 @@ body.anon-mode .char-name:hover {
 .card.collapsed > .card-header { margin-bottom: 0; }
 .card.collapsed .card-chevron { transform: rotate(-90deg); }
 .card.collapsed > *:not(.card-header) { display: none; }
+
+/* Die drei Spiel-Anzeigen nebeneinander, solange Platz ist. */
+.game-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+  align-items: start;
+}
+.game-cards .card { margin-bottom: 0; }
+.view-rows {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: 13px;
+}
+.view-rows dt { color: var(--muted); }
+.view-rows dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }

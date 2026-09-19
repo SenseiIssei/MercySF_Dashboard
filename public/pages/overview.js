@@ -94,6 +94,38 @@ export default {
         <p id="models-next" class="muted">${t('models.loading')}</p>
         <ul id="models-list" class="muted" style="margin:.4rem 0 0 1rem"></ul>
       </section>
+      <div class="game-cards">
+        <section class="card collapsible-card" id="view-legendary_dungeon">
+          <div class="card-header">
+            <span>🏰 ${t('views.legendaryTitle')}</span>
+            <span class="card-header-right">
+              <span class="muted" data-badge></span>
+              <button class="icon-btn" data-refresh="legendary_dungeon" title="${t('views.refreshTitle')}">⟳</button>
+            </span>
+          </div>
+          <div data-body class="muted">${t('views.loading')}</div>
+        </section>
+        <section class="card collapsible-card" id="view-hellevator">
+          <div class="card-header">
+            <span>🛗 ${t('views.hellevatorTitle')}</span>
+            <span class="card-header-right">
+              <span class="muted" data-badge></span>
+              <button class="icon-btn" data-refresh="hellevator" title="${t('views.refreshTitle')}">⟳</button>
+            </span>
+          </div>
+          <div data-body class="muted">${t('views.loading')}</div>
+        </section>
+        <section class="card collapsible-card" id="view-world_boss">
+          <div class="card-header">
+            <span>👹 ${t('views.worldBossTitle')}</span>
+            <span class="card-header-right">
+              <span class="muted" data-badge></span>
+              <button class="icon-btn" data-refresh="world_boss" title="${t('views.refreshTitle')}">⟳</button>
+            </span>
+          </div>
+          <div data-body class="muted">${t('views.loading')}</div>
+        </section>
+      </div>
       <section class="card collapsible-card accounts-card" id="accounts-card">
         <div class="card-header">
           <span>👥 Accounts</span>
@@ -606,6 +638,104 @@ export default {
     // Events einen Pilz wert sind" ERSETZT die Standardliste aus fünf, statt
     // sie zu ergänzen. Ein Charakter, der deshalb an einem Gold-Event kein
     // Bier kauft, sieht aus wie ein kaputter und tut genau das Eingestellte.
+    // Die drei Anzeigen aus dem Spiel, die die CLI seit 2.24.2 selbst
+    // beantwortet: legendäres Verlies, Höllenaufzug, Weltboss.
+    //
+    // Was hier steht, ist Beschriftung und Anordnung. Keine einzige Zahl wird
+    // hier ausgerechnet: sie kommen fertig aus derselben Ansicht, aus der auch
+    // die Anwendung ihre Seite baut. Die negative Gesundheit im Verlies war
+    // genau der andere Fall, und einmal reicht.
+    const zahl = n => (typeof n === 'number' ? n.toLocaleString() : '—');
+
+    const VIEW_CARDS = {
+      legendary_dungeon: {
+        badge: d => (d.live
+          ? t('views.ldBadge', { floor: d.floor ?? 0, keys: d.keys ?? 0 })
+          : t('views.notRunning')),
+        rows: d => {
+          const zeilen = [
+            // `hp` ist bereits der Wert, der angezeigt gehört: während der
+            // Heilung steht dort die Erholung und nicht der eingefrorene Wert
+            // vom Tod, und unter null geht er nicht mehr.
+            [t('views.health'), `${zahl(d.hp)} / ${zahl(d.max_hp)}`],
+            [t('views.floor'), `${d.floor ?? 0} / ${d.max_floor ?? '?'}`],
+            [t('views.keys'), zahl(d.keys)],
+          ];
+          if (typeof d.healing_percent === 'number') {
+            zeilen.push([t('views.healing'), `${d.healing_percent} %`]);
+          }
+          if (d.haul) {
+            zeilen.push([t('views.haul'), t('views.haulValue', {
+              silver: zahl(d.haul.silver_found),
+              keys: zahl(d.haul.keys_found),
+              enemies: zahl(d.haul.total_enemies),
+            })]);
+          }
+          if (d.next_action) zeilen.push([t('views.nextAction'), d.next_action]);
+          return zeilen;
+        },
+      },
+      hellevator: {
+        badge: d => (d.live || d.automating === true && d.floor > 0
+          ? t('views.floorBadge', { floor: d.floor ?? 0 })
+          : t('views.notRunning')),
+        rows: d => [
+          [t('views.floor'), `${d.floor ?? 0}`],
+          [t('views.bestFloor'), `${d.best_floor ?? 0}`],
+          [t('views.fightsWon'), zahl(d.fights_won)],
+          [t('views.earnedToday'), zahl(d.earned_today)],
+        ],
+      },
+      world_boss: {
+        badge: d => (d.event_live ? t('views.running') : t('views.notRunning')),
+        rows: d => [
+          [t('views.joined'), d.joined ? t('views.yes') : t('views.no')],
+          [t('views.catalysts'), zahl(d.catalysts)],
+          [t('views.segment'), d.current_segment || '—'],
+          [t('views.autoUpgrade'), d.auto_upgrade_enabled ? t('views.yes') : t('views.no')],
+        ],
+      },
+    };
+
+    async function renderViewCard(name, force = false) {
+      const card = wrap.querySelector(`#view-${name}`);
+      if (!card) return;
+      const badge = card.querySelector('[data-badge]');
+      const body = card.querySelector('[data-body]');
+      const accountId = ctx.getAccountId();
+      if (!accountId) {
+        badge.textContent = '';
+        body.textContent = t('views.selectAccount');
+        return;
+      }
+      try {
+        const r = await ctx.fetchJSON(
+          `/api/views/${encodeURIComponent(accountId)}/${name}${force ? '?refresh=1' : ''}`);
+        if (r.unavailable || !r.data) {
+          badge.textContent = '';
+          body.textContent = r.reason === 'cli-too-old'
+            ? t('views.cliTooOld')
+            : r.reason === 'no-password' ? t('events.noPassword') : t('views.noData');
+          return;
+        }
+        const spec = VIEW_CARDS[name];
+        badge.textContent = spec.badge(r.data);
+        const dl = document.createElement('dl');
+        dl.className = 'view-rows';
+        for (const [label, value] of spec.rows(r.data)) {
+          const dt = document.createElement('dt');
+          dt.textContent = label;
+          const dd = document.createElement('dd');
+          dd.textContent = value;
+          dl.append(dt, dd);
+        }
+        body.replaceChildren(dl);
+      } catch (err) {
+        badge.textContent = '';
+        body.textContent = t('analytics.loadError', { message: err.message });
+      }
+    }
+
     async function renderEvents(accountId, force = false) {
       const badge = wrap.querySelector('#events-badge');
       const list = wrap.querySelector('#events-list');
@@ -723,6 +853,7 @@ export default {
     function renderSlowCards(force = false) {
       renderModels(force);
       renderEvents(ctx.getAccountId(), force);
+      for (const name of Object.keys(VIEW_CARDS)) renderViewCard(name, force);
     }
 
     render().then(() => {
@@ -737,6 +868,9 @@ export default {
     const unsubSlowCards = ctx.onAccountChange(() => renderSlowCards());
     wrap.querySelector('#models-refresh-btn').addEventListener('click', () => renderModels(true));
     wrap.querySelector('#events-refresh-btn').addEventListener('click', () => renderEvents(ctx.getAccountId(), true));
+    wrap.querySelectorAll('[data-refresh]').forEach(btn => {
+      btn.addEventListener('click', () => renderViewCard(btn.dataset.refresh, true));
+    });
 
     const unsubGameState = ctx.onAccountChange(() => renderGameState(getCurrentProfileId()));
     wrap.querySelector('#gamestate-refresh-btn').addEventListener('click', () => renderGameState(getCurrentProfileId()));
