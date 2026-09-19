@@ -628,6 +628,15 @@ export default {
     // das letzte. Ohne Lizenz wird das Bundle nie angefordert, nichts schlägt
     // fehl, und der Bot fährt still auf den schlichten Algorithmen weiter.
     // Deshalb steht hier das Tor, das zu ist, und nicht bloß ein Ja oder Nein.
+    // Dieselbe Reihenfolge wie in der CLI: die Tore stehen hintereinander, und
+    // genannt wird das erste, das zu ist.
+    function nextSentence(m) {
+      if (!m.licence_key_present) return t('models.nextNoLicence');
+      if (!m.supporter) return t('models.nextNoSupporter');
+      if (!m.bundle_received) return t('models.nextNoBundle');
+      return t('models.nextHere');
+    }
+
     async function renderModels() {
       const badge = wrap.querySelector('#models-badge');
       const next = wrap.querySelector('#models-next');
@@ -645,7 +654,11 @@ export default {
         badge.textContent = ok
           ? t('models.activeBadge', { version: m.bundle_version ?? '?' })
           : t('models.inactiveBadge');
-        next.textContent = m.next || '';
+        // Welches Tor zu ist, wird hier aus den Zuständen abgeleitet und nicht
+        // aus dem Satz der CLI übernommen. Der ist englisch und stünde sonst
+        // mitten in einer deutschen Seite; und an einem Satz zu erkennen,
+        // welcher Fall vorliegt, hielte nur bis zur nächsten Umformulierung.
+        next.textContent = nextSentence(m);
         for (const model of m.models || []) {
           const li = document.createElement('li');
           li.textContent = model.samples
