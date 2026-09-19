@@ -49,8 +49,18 @@ case "$(uname -m)" in
 esac
 
 case "$(uname -m)" in
-  x86_64|amd64) SFAPI_BRIDGE_DOWNLOAD_URL="https://github.com/SenseiIssei/MercySF_Dashboard/releases/latest/download/mercy-sfapi-bridge-linux-x64" ;;
-  aarch64|arm64) SFAPI_BRIDGE_DOWNLOAD_URL="https://github.com/SenseiIssei/MercySF_Dashboard/releases/latest/download/mercy-sfapi-bridge-linux-arm64" ;;
+  # A FIXED tag, not "latest".
+  #
+  # This pointed at `releases/latest`, and "latest" is whatever release was cut
+  # most recently — which is the dashboard's own version tag and carries no
+  # binaries. Both URLs answered 404, and in the --node path below there is no
+  # fallback, so `set -e` ended the install right there. The full install only
+  # got away with it because it builds the bridge from source instead.
+  #
+  # The bridge changes when sf-api changes, which is not when the dashboard
+  # changes. Its own tag says exactly that.
+  x86_64|amd64) SFAPI_BRIDGE_DOWNLOAD_URL="https://github.com/SenseiIssei/MercySF_Dashboard/releases/download/sfapi-bridge-v1/mercy-sfapi-bridge-linux-x64" ;;
+  aarch64|arm64) SFAPI_BRIDGE_DOWNLOAD_URL="https://github.com/SenseiIssei/MercySF_Dashboard/releases/download/sfapi-bridge-v1/mercy-sfapi-bridge-linux-arm64" ;;
 esac
 SFAPI_BRIDGE_PATH="$INSTALL_DIR/mercy-sfapi-bridge"
 
@@ -475,8 +485,24 @@ if [[ "$NODE_ONLY" == "true" ]]; then
   mkdir -p "$NODE_AGENT_DIR/data"
 
   progress "Downloading the sf-api bridge (equipment/guild/tavern/mail lookups for accounts on this node)"
-  curl -fsSL -o "$SFAPI_BRIDGE_PATH" "$SFAPI_BRIDGE_DOWNLOAD_URL"
-  chmod +x "$SFAPI_BRIDGE_PATH"
+  # A missing binary must not end the install.
+  #
+  # It did: one `curl -fsSL` with `set -e` above it, and a node agent that
+  # would otherwise have worked never got installed. The bridge only fills the
+  # equipment, guild, tavern and mail panels; everything else on a node runs
+  # without it. So a failed download costs those panels and says so, rather
+  # than costing the installation.
+  if ! curl -fsSL -o "$SFAPI_BRIDGE_PATH" "$SFAPI_BRIDGE_DOWNLOAD_URL"; then
+    if command -v cargo >/dev/null 2>&1; then
+      progress "Download failed — building the sf-api bridge from source instead"
+      (cd "$DASHBOARD_DIR/sfapi-bridge" && cargo build --release)         && cp "$DASHBOARD_DIR/sfapi-bridge/target/release/mercy-sfapi-bridge" "$SFAPI_BRIDGE_PATH"
+    fi
+  fi
+  if [[ -f "$SFAPI_BRIDGE_PATH" ]]; then
+    chmod +x "$SFAPI_BRIDGE_PATH"
+  else
+    echo "  (no sf-api bridge: equipment, guild, tavern and mail stay empty on this node)"
+  fi
 
   progress "Setting up the node-agent systemd service"
   cp "$DASHBOARD_DIR/systemd/mercy-node-agent.service" /etc/systemd/system/mercy-node-agent.service
