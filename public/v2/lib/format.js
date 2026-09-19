@@ -1,3 +1,10 @@
+// Zahlen und Zeiten in der Sprache, die gewählt ist.
+//
+// `t` kommt hier als Parameter herein, `getLanguage` nicht: die Zahlen standen
+// deshalb fest auf 'de-DE'. Für eine Oberfläche in zehn Sprachen ist das eine
+// Zahl, die niemand lesen wollte.
+import { getLanguage } from '/lib/i18n.js';
+
 export function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
@@ -32,9 +39,9 @@ export function statsTooltipRows(acc, t) {
   const rows = [];
   if (s.level != null) rows.push([t('v2.tooltipLevel'), String(s.level)]);
   if (acc.characterClass) rows.push([t('v2.tooltipClass'), acc.characterClass]);
-  if (s.experience != null) rows.push([t('v2.tooltipExperience'), s.experience.toLocaleString('de-DE')]);
-  if (s.silver != null) rows.push([t('v2.tooltipSilver'), s.silver.toLocaleString('de-DE')]);
-  if (s.honor != null) rows.push([t('v2.tooltipHonor'), s.honor.toLocaleString('de-DE')]);
+  if (s.experience != null) rows.push([t('v2.tooltipExperience'), s.experience.toLocaleString(getLanguage())]);
+  if (s.silver != null) rows.push([t('v2.tooltipSilver'), s.silver.toLocaleString(getLanguage())]);
+  if (s.honor != null) rows.push([t('v2.tooltipHonor'), s.honor.toLocaleString(getLanguage())]);
   if (s.rank != null) rows.push([t('v2.tooltipRank'), String(s.rank)]);
   if (s.mushrooms != null) rows.push([t('v2.tooltipMushrooms'), String(s.mushrooms)]);
   return rows.length ? rows : [[t('v2.tooltipNoData'), '']];

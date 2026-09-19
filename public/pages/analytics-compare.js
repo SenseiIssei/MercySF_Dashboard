@@ -253,7 +253,7 @@ export default {
           <canvas id="chart-field-${f}"></canvas>
         </div>`).join('');
 
-      const locale = getLanguage() === 'en' ? 'en-US' : 'de-DE';
+      const locale = getLanguage();
       const bucketLabels = response.buckets.map(ts => new Date(ts).toLocaleString(locale, { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }));
 
       for (const field of FIELD_KEYS) {
