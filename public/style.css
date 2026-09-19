@@ -827,7 +827,15 @@ body.anon-mode .char-name:hover {
 .content {
   padding: 22px 26px 40px;
 }
-.content > * {
+/* Nur was im Textfluss steht.
+   
+   Vorher stand hier `.content > *`, und darunter faellt auch der Stapel mit den
+   Fehlermeldungen. Der ist `position: fixed` und braucht seine eigene Breite:
+   aus 320 Pixeln unten rechts wurden 1560 in der Mitte, und die Meldungen lagen
+   quer ueber der Seite. Ein Stern trifft mehr, als man beim Hinschreiben im
+   Kopf hat. */
+.content > .topbar,
+.content > #page-root {
   max-width: 1560px;
   margin-left: auto;
   margin-right: auto;
@@ -901,3 +909,15 @@ body.anon-mode .char-name:hover {
   .content { padding: 16px 14px 32px; }
   .card { padding: 12px 13px; }
 }
+
+/* Der Stapel der Meldungen gehört in die Ecke und nicht über den Inhalt, und
+   er hört bei fünf auf: danach steht die sechste Meldung ohnehin in der Liste
+   hinter der Glocke, und ein Turm aus Meldungen verdeckt genau das, worüber er
+   berichtet. */
+.toast-stack {
+  max-width: min(360px, calc(100vw - 40px));
+  max-height: min(60vh, 560px);
+  overflow: hidden;
+  pointer-events: none;
+}
+.toast-stack > * { pointer-events: auto; }
