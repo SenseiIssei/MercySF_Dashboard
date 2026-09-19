@@ -16,6 +16,15 @@ require('./lib/randomizer');
 
 const app = express();
 const PORT = process.env.PORT || 8080;
+// An welche Adresse gebunden wird. Voreinstellung wie bisher: alle Schnittstellen,
+// weil das Dashboard normalerweise auf einem Server steht, den man von anderswo
+// aufruft.
+//
+// `HOST=127.0.0.1` ist der Fall, für den das hier steht: ein Test auf einer
+// Maschine, auf der auch etwas anderes läuft. Dann ist die Seite ausschließlich
+// über einen SSH-Tunnel erreichbar und nicht aus dem Netz, und niemand muss dafür
+// eine Firewall-Regel anfassen, die danach jemand wieder vergisst.
+const HOST = process.env.HOST || '0.0.0.0';
 
 const PUBLIC_PAGE_PATHS = new Set(['/setup.html', '/login.html', '/setup.js', '/login.js']);
 // Shared static assets (i18n dictionaries, small client-side helpers — no sensitive data) that
@@ -138,8 +147,8 @@ function restoreAutoStartedProfiles() {
   if (toStart.length) console.log(`[autostart] ${toStart.length} zuletzt laufende Charakter(e) werden gestaffelt neu gestartet`);
 }
 
-httpServer.listen(PORT, '0.0.0.0', () => {
-  console.log(`Mercy Dashboard (${useTls ? 'HTTPS' : 'HTTP'}) listening on :${PORT}`);
+httpServer.listen(PORT, HOST, () => {
+  console.log(`Mercy Dashboard (${useTls ? 'HTTPS' : 'HTTP'}) listening on ${HOST}:${PORT}`);
   console.log(`Resolved data dir: ${findDataDir() || '(none found yet)'}`);
   restoreAutoStartedProfiles();
 });
