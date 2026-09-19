@@ -1,5 +1,6 @@
 import { t } from '/lib/i18n.js';
 import { escapeHtml, fmtUptime, fmtMinutesAsTime, currentOrNextWindow, statsTooltipRows, formatPlanBlocks } from '/v2/lib/format.js';
+import { pollWhileVisible } from '/lib/poll.js';
 
 function accountStatusLabel(acc) {
   if (acc.paused) return t('v2.accountPaused');
@@ -223,7 +224,7 @@ export default {
     }
 
     load();
-    const interval = setInterval(load, 15000);
-    return () => clearInterval(interval);
+    const stopPoll = pollWhileVisible(load, 15000);
+    return () => stopPoll();
   },
 };

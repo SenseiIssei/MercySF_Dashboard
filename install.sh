@@ -3,19 +3,19 @@
 # Mercy SF Dashboard — One-Shot Installer
 #
 # Full dashboard (incl. local CLI, sf-api bridge) on a fresh Debian/Ubuntu server (as root):
-#   curl -fsSL https://raw.githubusercontent.com/dandulox/MercySF_Dashboard/main/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/SenseiIssei/MercySF_Dashboard/main/install.sh | bash
 #
 # Slim node-agent only (remote-controls accounts on this server from a central dashboard, see the
 # "Nodes" page there — no web UI of its own, no sf-api build):
-#   curl -fsSL https://raw.githubusercontent.com/dandulox/MercySF_Dashboard/main/install.sh | bash -s -- --node
+#   curl -fsSL https://raw.githubusercontent.com/SenseiIssei/MercySF_Dashboard/main/install.sh | bash -s -- --node
 #
 # Install/test from a specific branch (e.g. a feature branch before merging to main) —
 # MERCY_BRANCH controls which branch is cloned/checked out; install.sh itself must still be
 # fetched from that exact branch:
-#   curl -fsSL https://raw.githubusercontent.com/dandulox/MercySF_Dashboard/nodetest/install.sh | MERCY_BRANCH=nodetest bash -s -- --node
+#   curl -fsSL https://raw.githubusercontent.com/SenseiIssei/MercySF_Dashboard/nodetest/install.sh | MERCY_BRANCH=nodetest bash -s -- --node
 #
 # Uninstall (removes EVERYTHING, incl. saved credentials and stats history):
-#   curl -fsSL https://raw.githubusercontent.com/dandulox/MercySF_Dashboard/main/install.sh | bash -s -- --uninstall
+#   curl -fsSL https://raw.githubusercontent.com/SenseiIssei/MercySF_Dashboard/main/install.sh | bash -s -- --uninstall
 #
 # Idempotent: running it again only updates code + dependencies — existing account data
 # (/opt/mercy/dashboard/data resp. /opt/mercy/dashboard/node-agent/data), certificates
@@ -24,7 +24,7 @@
 
 set -euo pipefail
 
-REPO_URL="https://github.com/dandulox/MercySF_Dashboard.git"
+REPO_URL="https://github.com/SenseiIssei/MercySF_Dashboard.git"
 BRANCH="${MERCY_BRANCH:-main}"
 INSTALL_DIR="/opt/mercy"
 DASHBOARD_DIR="$INSTALL_DIR/dashboard"
@@ -49,8 +49,8 @@ case "$(uname -m)" in
 esac
 
 case "$(uname -m)" in
-  x86_64|amd64) SFAPI_BRIDGE_DOWNLOAD_URL="https://github.com/dandulox/MercySF_Dashboard/releases/latest/download/mercy-sfapi-bridge-linux-x64" ;;
-  aarch64|arm64) SFAPI_BRIDGE_DOWNLOAD_URL="https://github.com/dandulox/MercySF_Dashboard/releases/latest/download/mercy-sfapi-bridge-linux-arm64" ;;
+  x86_64|amd64) SFAPI_BRIDGE_DOWNLOAD_URL="https://github.com/SenseiIssei/MercySF_Dashboard/releases/latest/download/mercy-sfapi-bridge-linux-x64" ;;
+  aarch64|arm64) SFAPI_BRIDGE_DOWNLOAD_URL="https://github.com/SenseiIssei/MercySF_Dashboard/releases/latest/download/mercy-sfapi-bridge-linux-arm64" ;;
 esac
 SFAPI_BRIDGE_PATH="$INSTALL_DIR/mercy-sfapi-bridge"
 
