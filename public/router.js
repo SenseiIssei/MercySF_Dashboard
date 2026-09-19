@@ -470,6 +470,13 @@ function showToast(n) {
     ${n.source ? `<div class="notif-item-char char-name">${escapeHtml(n.source)}</div>` : ''}
     <div class="notif-item-message">${levelIcon(n.level)} ${escapeHtml(n.message)}</div>`;
   stack.appendChild(div);
+  // Hoechstens fuenf auf einmal.
+  //
+  // Die Flotte meldet in Schueben: nach einem Neustart kamen dreizehn Warnungen
+  // innerhalb weniger Sekunden, und der Stapel lag quer ueber der Seite. Die
+  // aelteste weicht, und verloren geht dabei nichts: hinter der Glocke steht
+  // jede Meldung vollstaendig in der Liste.
+  while (stack.children.length > 5) stack.firstElementChild.remove();
   setTimeout(() => div.remove(), 8000);
 }
 
