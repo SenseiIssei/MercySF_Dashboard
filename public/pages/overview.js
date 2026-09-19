@@ -72,6 +72,14 @@ export default {
       <section class="card" id="no-data-card" style="display:none">
         <p>${t('overview.noDataHint')}</p>
       </section>
+      <section class="card collapsible-card" id="models-card">
+        <div class="card-header">
+          <span>🧠 ${t('models.title')}</span>
+          <span id="models-badge" class="muted"></span>
+        </div>
+        <p id="models-next" class="muted">${t('models.loading')}</p>
+        <ul id="models-list" class="muted" style="margin:.4rem 0 0 1rem"></ul>
+      </section>
       <section class="card collapsible-card accounts-card" id="accounts-card">
         <div class="card-header">
           <span>👥 Accounts</span>
@@ -559,6 +567,46 @@ export default {
       }
     }
 
+    // Kommen die gelernten Modelle an? Drei Tore, und von außen sieht man nur
+    // das letzte. Ohne Lizenz wird das Bundle nie angefordert, nichts schlägt
+    // fehl, und der Bot fährt still auf den schlichten Algorithmen weiter.
+    // Deshalb steht hier das Tor, das zu ist, und nicht bloß ein Ja oder Nein.
+    async function renderModels() {
+      const badge = wrap.querySelector('#models-badge');
+      const next = wrap.querySelector('#models-next');
+      const list = wrap.querySelector('#models-list');
+      if (!badge || !next || !list) return;
+      list.innerHTML = '';
+      try {
+        const m = await ctx.fetchJSON('/api/models');
+        if (m.unsupported) {
+          badge.textContent = t('models.unsupportedBadge');
+          next.textContent = m.next;
+          return;
+        }
+        const ok = !!m.bundle_received;
+        badge.textContent = ok
+          ? t('models.activeBadge', { version: m.bundle_version ?? '?' })
+          : t('models.inactiveBadge');
+        next.textContent = m.next || '';
+        for (const model of m.models || []) {
+          const li = document.createElement('li');
+          li.textContent = model.samples
+            ? t('models.entryWithSamples', { kind: model.kind, samples: model.samples.toLocaleString() })
+            : model.kind;
+          list.appendChild(li);
+        }
+        if (m.measured_settings) {
+          const li = document.createElement('li');
+          li.textContent = t('models.measuredSettings', { count: m.measured_settings });
+          list.appendChild(li);
+        }
+      } catch (err) {
+        badge.textContent = '';
+        next.textContent = t('analytics.loadError', { message: err.message });
+      }
+    }
+
     async function render() {
       const accounts = await ctx.fetchJSON('/api/accounts');
       lastAccounts = accounts;
@@ -569,6 +617,7 @@ export default {
       renderStatCards(current);
       await renderDailyEarnings(accountId);
       await renderLog(accountId, current ? current.charName : null);
+      await renderModels();
     }
 
     render().then(() => {
