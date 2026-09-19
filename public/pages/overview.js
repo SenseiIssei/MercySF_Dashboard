@@ -72,6 +72,14 @@ export default {
       <section class="card" id="no-data-card" style="display:none">
         <p>${t('overview.noDataHint')}</p>
       </section>
+      <section class="card collapsible-card" id="events-card">
+        <div class="card-header">
+          <span>🎉 ${t('events.title')}</span>
+          <span id="events-badge" class="muted"></span>
+        </div>
+        <ul id="events-list" class="muted" style="margin:.2rem 0 0 1rem"></ul>
+        <p id="events-note" class="muted"></p>
+      </section>
       <section class="card collapsible-card" id="models-card">
         <div class="card-header">
           <span>🧠 ${t('models.title')}</span>
@@ -567,6 +575,55 @@ export default {
       }
     }
 
+    // Was läuft, und zählt es für diesen Charakter?
+    //
+    // Die zweite Hälfte ist die wichtige. Eine eigene Auswahl unter "Welche
+    // Events einen Pilz wert sind" ERSETZT die Standardliste aus fünf, statt
+    // sie zu ergänzen. Ein Charakter, der deshalb an einem Gold-Event kein
+    // Bier kauft, sieht aus wie ein kaputter und tut genau das Eingestellte.
+    async function renderEvents(accountId) {
+      const badge = wrap.querySelector('#events-badge');
+      const list = wrap.querySelector('#events-list');
+      const note = wrap.querySelector('#events-note');
+      if (!badge || !list || !note) return;
+      list.innerHTML = '';
+      note.textContent = '';
+      if (!accountId) { badge.textContent = ''; return; }
+      try {
+        const e = await ctx.fetchJSON(`/api/events/${encodeURIComponent(accountId)}`);
+        if (e.unavailable) {
+          badge.textContent = '';
+          note.textContent = e.reason === 'cli-too-old'
+            ? t('events.cliTooOld')
+            : t('events.noPassword');
+          return;
+        }
+        if (!e.running.length) {
+          badge.textContent = t('events.noneBadge');
+          return;
+        }
+        badge.textContent = t('events.countBadge', { count: e.running.length });
+        for (const name of e.running) {
+          const li = document.createElement('li');
+          const counts = e.covered.includes(name);
+          li.textContent = counts ? `${name} — ${t('events.counts')}` : `${name} — ${t('events.ignored')}`;
+          li.style.color = counts ? 'var(--ok, #4ade80)' : '';
+          list.appendChild(li);
+        }
+        if (!e.beerOnEvents) {
+          note.textContent = t('events.switchOff');
+        } else if (e.uncovered.length && !e.usingDefaults) {
+          // Der Fall, der zweimal für einen Fehler gehalten wurde.
+          note.textContent = t('events.replacedList', { events: e.uncovered.join(', ') });
+        } else if (e.beerAppliesToday) {
+          note.textContent = t('events.beerApplies', { amount: e.beerEventAmount ?? '?' });
+        }
+      } catch (err) {
+        badge.textContent = '';
+        note.textContent = t('analytics.loadError', { message: err.message });
+      }
+    }
+
     // Kommen die gelernten Modelle an? Drei Tore, und von außen sieht man nur
     // das letzte. Ohne Lizenz wird das Bundle nie angefordert, nichts schlägt
     // fehl, und der Bot fährt still auf den schlichten Algorithmen weiter.
@@ -618,6 +675,7 @@ export default {
       await renderDailyEarnings(accountId);
       await renderLog(accountId, current ? current.charName : null);
       await renderModels();
+      await renderEvents(accountId);
     }
 
     render().then(() => {
