@@ -1,4 +1,4 @@
-import { t, initI18nLocal, setLanguageLocal, getLanguage, onLanguageChange } from '/lib/i18n.js';
+import { t, initI18nLocal, setLanguageLocal, getLanguage, onLanguageChange, LANGUAGES } from '/lib/i18n.js';
 
 async function fetchJSON(url, opts) {
   const res = await fetch(url, opts);
@@ -57,15 +57,35 @@ function initCopyButtons(root = document) {
   });
 }
 
+
+/**
+ * Die Sprachwahl als Liste statt als Umschalter.
+ *
+ * Es waren zwei Sprachen und ein Knopf, der zwischen ihnen hin und her
+ * sprang. Bei zehn ist das kein Knopf mehr, sondern ein Ratespiel.
+ */
+function buildLanguagePicker(el, current, onPick) {
+  el.innerHTML = '';
+  const select = document.createElement('select');
+  select.className = 'lang-select';
+  select.setAttribute('aria-label', 'Language');
+  for (const { code, name } of LANGUAGES) {
+    const opt = document.createElement('option');
+    opt.value = code;
+    opt.textContent = name;
+    if (code === current) opt.selected = true;
+    select.appendChild(opt);
+  }
+  select.addEventListener('change', () => onPick(select.value));
+  el.appendChild(select);
+  return select;
+}
+
 function initLangToggle() {
-  const btn = document.getElementById('lang-toggle-btn');
-  if (!btn) return;
-  const apply = (lang) => { btn.textContent = lang === 'de' ? 'EN' : 'DE'; };
-  apply(getLanguage());
-  onLanguageChange(apply);
-  btn.addEventListener('click', () => {
-    setLanguageLocal(getLanguage() === 'de' ? 'en' : 'de');
-  });
+  const el = document.getElementById('lang-toggle-btn');
+  if (!el) return;
+  const select = buildLanguagePicker(el, getLanguage(), setLanguageLocal);
+  onLanguageChange(lang => { select.value = lang; });
 }
 
 async function init() {

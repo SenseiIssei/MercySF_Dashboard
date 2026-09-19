@@ -436,6 +436,7 @@ export default {
   'views.hellevatorTitle': 'Hellevator',
   'views.worldBossTitle': 'World boss',
   'views.refreshTitle': 'Fetch again now (one login to the game)',
+  'views.busy': 'Not available right now: the running bot holds the session. The button tries again.',
   'views.loading': 'loading …',
   'views.selectAccount': 'Pick an account.',
   'views.noData': 'No data.',
@@ -650,4 +651,7 @@ export default {
   'v2.tooltipMushrooms': 'Mushrooms',
   'v2.tooltipPlannedToday': 'Planned today',
   'v2.tooltipStadtwache': 'City watch',
+  'overview.accountsTitle': 'Accounts',
+  'overview.accountsCount': '{{count}} account(s)',
+  'overview.activityLogTitle': 'Activity log',
 };
