@@ -107,32 +107,44 @@ function Test-Docker {
 Write-Banner
 
 if ($Uninstall) {
+  if (-not (Test-Docker)) {
+    Write-Error "Docker Desktop is not running. Start it and run the uninstall again so containers and volumes can be removed."
+    exit 1
+  }
   if (Test-Path $InstallDir) {
     Push-Location $InstallDir
-    docker compose down -v
-    Pop-Location
-  }
-  if (Test-Docker) {
-    # Node containers created via add-node.ps1 (or install.ps1's own node loop) never go through
-    # docker-compose, so "compose down" above doesn't touch them — find them by the
-    # "mercy.role=node" label (set in scripts/lib/dockerNode.js) instead and remove each one
-    # plus its data volume.
-    $nodeIds = docker ps -aq --filter "label=mercy.role=node"
-    if ($nodeIds) {
-      $removed = 0
-      foreach ($cid in $nodeIds) {
-        $name = (docker inspect --format '{{.Name}}' $cid) -replace '^/', ''
-        docker rm -f $cid | Out-Null
-        if ($name) {
-          docker volume rm "mercy_node_${name}_data" 2>$null | Out-Null
-          docker volume rm "mercy_node_${name}_cli" 2>$null | Out-Null
-        }
-        $removed++
+    try {
+      docker compose down -v --remove-orphans
+      if ($LASTEXITCODE -ne 0) {
+        throw "Docker Compose cleanup failed (exit $LASTEXITCODE). The installation was not removed."
       }
-      Write-Ok "Removed $removed Docker node container(s) and their volumes"
+    } finally {
+      Pop-Location
     }
   }
-  Write-Ok "Done — containers and volumes removed. Directory '$InstallDir' (code) is left in place; delete it manually if you want it gone too."
+  # Node containers created via add-node.ps1 (or install.ps1's own node loop) never go through
+  # docker-compose, so "compose down" above doesn't touch them — find them by the
+  # "mercy.role=node" label (set in scripts/lib/dockerNode.js) instead and remove each one
+  # plus its data volume.
+  $nodeIds = docker ps -aq --filter "label=mercy.role=node"
+  if ($nodeIds) {
+    $removed = 0
+    foreach ($cid in $nodeIds) {
+      $name = (docker inspect --format '{{.Name}}' $cid) -replace '^/', ''
+      docker rm -f $cid | Out-Null
+      if ($name) {
+        docker volume rm "mercy_node_${name}_data" 2>$null | Out-Null
+        docker volume rm "mercy_node_${name}_cli" 2>$null | Out-Null
+      }
+      $removed++
+    }
+    Write-Ok "Removed $removed Docker node container(s) and their volumes"
+  }
+  if (Test-Path $InstallDir) {
+    Remove-Item -LiteralPath $InstallDir -Recurse -Force
+    Write-Ok "Removed local installation directory '$InstallDir'"
+  }
+  Write-Ok "Done — containers, volumes, code, and saved settings removed."
   exit 0
 }
 
