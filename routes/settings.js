@@ -10,6 +10,18 @@ const nodeRegistry = require('../lib/nodeRegistry');
 const nodeClient = require('../lib/nodeClient');
 
 const router = express.Router();
+const RESTART_ON_CHANGE = new Set([
+  'beer_event_amount',
+  'beer_on_events',
+  'beer_buy_amount',
+  'beer_auto_detect_free',
+  'beer_ignores_mushroom_reserve',
+  'worthwhile_events',
+]);
+
+function beerSettingsChanged(updates) {
+  return Object.keys(updates).some(key => RESTART_ON_CHANGE.has(key));
+}
 
 function remoteNodeFor(profile) {
   if (!profile || !profile.nodeId) return null;
@@ -135,6 +147,7 @@ router.put('/:accountId', express.json(), async (req, res) => {
         writeFileUpdates(req.params.accountId, fileUpdates, config);
         Object.assign(merged, fileUpdates);
       }
+      if (beerSettingsChanged(updates)) ptyManager.restartIfRunning(req.params.accountId);
 
       settingsDefaults.learnFrom(merged);
       return res.json(merged);
@@ -156,6 +169,7 @@ router.put('/:accountId', express.json(), async (req, res) => {
       return res.status(400).json({ error: `Unbekannte oder typinkompatible Felder: ${rejected.join(', ')}` });
     }
     fs.writeFileSync(filePath, JSON.stringify(current, null, 2));
+    if (beerSettingsChanged(updates)) ptyManager.restartIfRunning(req.params.accountId);
     settingsDefaults.learnFrom(current);
     res.json(current);
   } catch (err) {
