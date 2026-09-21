@@ -195,14 +195,27 @@ banner
 
 if [[ "${1:-}" == "--uninstall" ]]; then
   log "Removing Mercy SF (dashboard and/or node agent — removes EVERYTHING: code, services, certificates, CLI, saved credentials, stats history, Docker containers/volumes)"
+  NATIVE_SERVICE_PRESENT=false
+  for service in mercy-dashboard mercy-sfapi-bridge mercy-node-agent; do
+    if [[ -f "/etc/systemd/system/${service}.service" ]]; then
+      NATIVE_SERVICE_PRESENT=true
+      break
+    fi
+  done
+  DOCKER_READY=false
+  if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+    DOCKER_READY=true
+  elif [[ "$NATIVE_SERVICE_PRESENT" == false ]]; then
+    die "Docker is installed but not reachable. Start Docker and run the uninstall again so containers and volumes can be removed."
+  fi
   systemctl stop mercy-dashboard mercy-sfapi-bridge mercy-node-agent 2>/dev/null || true
   systemctl disable mercy-dashboard mercy-sfapi-bridge mercy-node-agent 2>/dev/null || true
   rm -f /etc/systemd/system/mercy-dashboard.service /etc/systemd/system/mercy-sfapi-bridge.service /etc/systemd/system/mercy-node-agent.service
   systemctl daemon-reload
-  if [[ -d "$DASHBOARD_DIR" ]]; then
-    (cd "$DASHBOARD_DIR" && docker compose down -v 2>/dev/null || true)
+  if [[ "$DOCKER_READY" == true && -d "$DASHBOARD_DIR" ]]; then
+    (cd "$DASHBOARD_DIR" && docker compose down -v --remove-orphans)
   fi
-  if command -v docker >/dev/null 2>&1; then
+  if [[ "$DOCKER_READY" == true ]]; then
     # Node containers created via add-node.sh (or install.sh's own node loop) never go through
     # docker-compose, so "compose down" above doesn't touch them — find them by the
     # "mercy.role=node" label (set in scripts/lib/dockerNode.js) instead and remove each one

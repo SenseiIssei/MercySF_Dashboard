@@ -341,6 +341,14 @@ app.put('/profiles/:id/settings', async (req, res) => {
         writeCharacterFileUpdates(profile, fileUpdates, config);
         Object.assign(merged, fileUpdates);
       }
+      if (Object.keys(updates).some(key => [
+        'beer_event_amount',
+        'beer_on_events',
+        'beer_buy_amount',
+        'beer_auto_detect_free',
+        'beer_ignores_mushroom_reserve',
+        'worthwhile_events',
+      ].includes(key))) ptyManager.restartIfRunning(profile.id);
       return res.json(merged);
     } catch (err) {
       return res.status(err.status || 502).json({ error: err.message });
@@ -360,6 +368,14 @@ app.put('/profiles/:id/settings', async (req, res) => {
       return res.status(400).json({ error: `Unbekannte oder typinkompatible Felder: ${rejected.join(', ')}` });
     }
     fs.writeFileSync(filePath, JSON.stringify(current, null, 2));
+    if (Object.keys(updates).some(key => [
+      'beer_event_amount',
+      'beer_on_events',
+      'beer_buy_amount',
+      'beer_auto_detect_free',
+      'beer_ignores_mushroom_reserve',
+      'worthwhile_events',
+    ].includes(key))) ptyManager.restartIfRunning(profile.id);
     res.json(current);
   } catch (err) {
     res.status(err.status || 500).json({ error: err.message });
